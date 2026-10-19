@@ -1,0 +1,244 @@
+\documentclass[oneside]{book}
+
+% ---- 版心与页眉页脚 ----
+\usepackage[letterpaper,
+    left=2.5cm, right=2.5cm,
+    top=2.4cm, bottom=2.4cm,
+    headheight=13pt, headsep=10pt, footskip=17pt
+]{geometry}
+
+% ---- 中文排版支持（ctex + 思源字体）----
+\usepackage[UTF8, fontset=none]{ctex}
+\setCJKmainfont{NotoSerifCJKsc-Regular.otf}[
+  BoldFont=NotoSerifCJKsc-Bold.otf,
+  ItalicFont=NotoSerifCJKsc-Bold.otf]
+\setCJKsansfont{NotoSansCJKsc-Regular.otf}[
+  BoldFont=NotoSansCJKsc-Bold.otf,
+  ItalicFont=NotoSansCJKsc-Bold.otf]
+\setCJKmonofont{NotoSansCJKsc-Regular.otf}
+
+% ---- 版式调整：改善分页与断行 ----
+\raggedbottom                       % 页面自然结束，不强行拉伸填满（消除纵向溢出与过大空白）
+\clubpenalty=10000                  % 禁止段首单行落在页尾
+\widowpenalty=10000                 % 禁止段尾单行孤悬页首
+\displaywidowpenalty=10000          % 公式前的孤行同样禁止
+\setlength{\emergencystretch}{3em}  % 允许额外伸展，减少文字冲出右边距
+
+% ---- 浮动体布局：允许更多浮动体同页，减少大片空白 ----
+\renewcommand{\topfraction}{0.85}      % 页顶浮动体最多占 85%
+\renewcommand{\bottomfraction}{0.7}    % 页底浮动体最多占 70%
+\renewcommand{\textfraction}{0.12}     % 每页正文至少占 12%
+\renewcommand{\floatpagefraction}{0.8} % 整页浮动体页需占满 80%，避免"只有一张图"的空页
+\setcounter{topnumber}{3}
+\setcounter{bottomnumber}{2}
+\setcounter{totalnumber}{4}
+
+\usepackage{natbib}
+\usepackage[sectionbib]{chapterbib} % bibliography per chapter
+
+
+\usepackage{graphicx} % Required for inserting images
+\usepackage{url}
+\usepackage{newtxtext}
+\usepackage{amsmath}
+\usepackage{amsthm}
+\usepackage{newtxmath}
+\usepackage{mathtools}
+\usepackage{graphicx}
+\usepackage[cachedir=.]{minted}
+\usepackage{mdframed}
+\usepackage[pagebackref]{hyperref}
+\hypersetup{colorlinks=true, linkcolor=gray, citecolor=gray, linktoc=all}
+% linktoc=all: 目录中标题文字与页码都可点击，点击即跳转到对应章节
+\usepackage{forest}
+\usepackage{tikz}
+\usetikzlibrary{decorations.pathreplacing}
+\usepackage{tabularx}
+\usepackage{subcaption}
+
+\usetikzlibrary{positioning}% To get more advances positioning options
+\usetikzlibrary{arrows}% To get more arrow heads
+\usetikzlibrary{chains}
+\usetikzlibrary{arrows.meta}
+\usepackage{adjustbox}
+% Add these to your preamble:
+\usepackage[most]{tcolorbox} % for fancy colored boxes
+\usepackage{fontawesome5}           % for emoji support
+%\usepackage{hyperref}        % for clickable links
+\usepackage{todonotes}
+\usepackage{standalone}
+\usepackage{booktabs}
+\usepackage[inline]{enumitem}
+\usepackage{algorithm}
+%\usepackage{algorithmic}
+\usepackage{algpseudocode}
+%\algloopdefx{NFor}[1]{\textbf{for all} #1 \textbf{do}}
+\usepackage{listings}
+%\usepackage{emoji}
+\counterwithin{listing}{chapter}
+
+% ---- 中文化浮动体与页眉 ----
+% minted 的 listing 浮动体名称：本机未装 newfloat，minted 走 float 分支，由 \listingscaption 控制
+\renewcommand{\listingscaption}{代码清单}
+\floatname{listing}{\listingscaption}
+\renewcommand{\lstlistingname}{代码清单}  % 直接使用 lstlisting 自带 caption 时
+% 页眉章标记：book 类在 oneside 模式下用 \markright（twoside 才用 \markboth）
+\renewcommand{\chaptermark}[1]{\markright{第~\thechapter~章\quad #1}}
+% 章首页「Chapter N」与分部首页「Part X」：ctex 的 ctexheading 在 book 类下未启用，
+% 无 chapter/name 键可用，故直接打补丁替换英文标签。
+% 注意 \@part 会被 hyperref（存为 \H@old@part）与 nameref（存为 \NR@part）逐层包裹，
+% 真正的函数体在 \NR@part，故按由内到外的顺序依次尝试，命中即止。
+\usepackage{etoolbox}
+\newif\ifpartpatched
+\makeatletter
+\patchcmd{\@makechapterhead}{\@chapapp\space \thechapter}{第\thechapter 章}%
+  {\typeout{PATCH-OK: chapter head}}{\typeout{PATCH-FAIL: chapter head}}
+\@ifundefined{NR@part}{}{%
+  \patchcmd{\NR@part}{\partname\nobreakspace\thepart}{第\thepart 部分}%
+    {\partpatchedtrue\typeout{PATCH-OK: part head via NR@part}}{}}
+\ifpartpatched\else
+  \@ifundefined{H@old@part}{}{%
+    \patchcmd{\H@old@part}{\partname\nobreakspace\thepart}{第\thepart 部分}%
+      {\partpatchedtrue\typeout{PATCH-OK: part head via H@old@part}}{}}
+\fi
+\ifpartpatched\else
+  \patchcmd{\@part}{\partname\nobreakspace\thepart}{第\thepart 部分}%
+    {\partpatchedtrue\typeout{PATCH-OK: part head via @part}}{}
+\fi
+\ifpartpatched\else\typeout{PATCH-FAIL: part head all}\fi
+\makeatother
+
+
+\DeclareMathOperator*{\argmax}{arg\,max}
+\DeclareMathOperator*{\argmin}{arg\,min}
+\newcommand{\Tau}{\mathcal{T}}
+\newcommand{\cpol}[0]{\pmb{\mu}}
+
+\newcommand\given[1][]{\:#1\vert\:}
+
+% Define the example environment
+\theoremstyle{definition}
+\newtheorem{example}{Example}
+% 2. Apply the outline and margins to the environment
+\surroundwithmdframed[
+    nobreak=true,           % 示例框整体不跨页断开，避免阅读被截断
+    linewidth=0.8pt,        % Thickness of the outline
+    innerleftmargin=12pt,   % Internal padding on the left
+    innerrightmargin=12pt,  % Internal padding on the right
+    innertopmargin=12pt,    % Internal padding at the top
+    innerbottommargin=12pt, % Internal padding at the bottom
+    skipabove=15pt,         % Extra external margin above the box
+    skipbelow=15pt,         % Extra external margin below the box
+    roundcorner=3pt         % Optional: slightly rounded corners for a modern look
+]{example}
+
+
+\newtcolorbox{learningbox}{
+    breakable,
+    colback=green!8!white,
+    colframe=green!50!black,
+    title={\faGraduationCap\quad 本章要点},
+    fonttitle=\bfseries,
+    coltitle=white,
+    boxrule=1pt,
+    arc=4pt,
+    left=5pt,
+    right=5pt,
+    top=5pt,
+    bottom=5pt,
+    enhanced
+}
+
+
+\title{{\bf Agentic Large Language Models}\\[0.45em]{\Large 智能体式大语言模型}}
+\author{Max van Duijn\\ Michiel van der Meer\\ Aske Plaat\\ Niki van Stein}
+%\date{10 March 2025\\ \ \\
+\date{%Incomplete Draft Version of 22 August 2026\\ \ \\ For internal use for education at Leiden University only\\ Not to be distributed\\ \ \\
+%\includegraphics[width=6cm]{figures/agent}\\
+\includegraphics[width=6cm]{figures/virtuouscover2}\\
+\vspace{2cm}
+\includegraphics[width=2cm]{figures/leiden}\\
+}
+
+
+
+\begin{document}
+
+
+\maketitle
+
+\setcounter{tocdepth}{1}
+%\tableofcontents
+\setcounter{secnumdepth}{3}
+\setcounter{tocdepth}{3}
+\tableofcontents
+
+
+
+\include{chapters/01_intro}
+
+
+\part{语言建模}
+\include{part1/pt_lang}
+\include{part1/02_lang}
+\include{part1/03_pipeline}
+\include{part1/04_scaling}
+\include{part1/05_case1_scratch}
+
+
+%\part{Reasoning and Learning to Act}
+\part{推理}
+\include{part2/pt_reas}
+\include{part2/06_reasoning} % in context 
+\include{part2/07_robot}     % pretraining 
+\include{part2/08_meta}    % Agentic LLM that learn
+
+
+\part{智能体}
+\include{part3/pt_agent}
+\include{part3/09_agents}    % Agentic LLM that learn
+\include{part3/10_case2_reflection}
+
+
+
+%\part{Tools \& Assistants}
+%\part{Tools for Agentic Systems and their Applications}
+\part{工具与助手}
+\include{part4/pt_tools}
+\include{part4/11_tools_niki}
+\include{part4/12_retrieval_niki}
+\include{part4/13_assist}
+\include{part4/14_case3_assist}
+
+
+\part{行为与认知}
+\include{part5/pt_beh}
+\include{part5/15_behavior}
+\include{part5/16_role-based}
+\include{part5/17_emergent}
+\include{part5/18_case4_societysim}
+
+
+\part{进阶主题}
+\include{part6/pt_adv}
+\include{part6/19_synthetic}
+\include{part6/20_advanced_arch}
+\include{part6/21_mechanistic}
+\include{part6/22_cognition}
+
+
+\part{结论}
+\include{chapters/pt_concl}
+\include{chapters/23_concl}
+
+
+
+
+
+% not used here anymore because bibunits per chapter
+%\bibliographystyle{plainnat}
+% to count the number of references...
+%\bibliographystyle{plain}
+%\bibliography{agenticbook, part1/refs, part1/case, part6/synthetic}
+
+\end{document}

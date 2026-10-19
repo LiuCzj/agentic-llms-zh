@@ -1,0 +1,389 @@
+%\chapter{Future Directions for Agentic LLMs}\label{chap:concl}
+\chapter{智能体式大语言模型的未来方向}\label{chap:concl}
+
+
+行至全书末尾，我们对已讨论的内容作一个简要的高层总结。首先回顾关于智能体式大语言模型如何构建的各章。然后总结关于智能体式大语言模型的各种应用、以及它们在单智能体与多智能体环境中的行为。最后，在第~\ref{sec:limitations} 节我们审视当前方法的局限，以及未来可能带来什么。
+
+\section{智能体式大语言模型的现状}
+如第一、二、三部分所述，智能体式大语言模型的基础在于语言建模、推理、工具使用，以及不同程度的自主性。
+
+\subsection{技术} 
+智能体式大语言模型是在世界中行动、并能从反馈中调整行为的推理模型。经过预训练与微调之后（第~\ref{chap:pipeline} 章），它们在推理时可以访问外部信息（检索增强生成式人工智能，第~\ref{sec:rag} 章）。它们也可以在推理时自我提示以核实结果，从而带来自我反思与上下文内强化学习，见第~\ref{chap:reasoning} 章。智能体式大语言模型已变得多模态，它们在语言、视觉与行动领域运作（第~\ref{chap:world} 章）。为有效做到这一点，可以为智能体式大语言模型配备预训练的世界模型，使其对物理世界有初步的理解。通过与环境的交互，这些世界模型可以在测试时得到改进。
+
+所用的主要机器学习架构是 Transformer 架构。模型通过自监督（下一 token 预测）预训练，并通过监督学习与强化学习在特定任务上微调。
+
+上下文内思维链提示显著提升了模型的推理能力。已发展出用于微调（如 RLVR 与 GRPO）与自我反思（如 ReAct 与 Reflexion，第~\ref{chap:reasoning} 章）的推理时方法。还发展出一整谱系的智能体—环境交互提示风格（第~\ref{chap:agents} 章）。
+
+\subsection{应用}
+在第四部分，介绍了多种工具以简化智能体式大语言模型的构建（第~\ref{chap:tools} 章）。智能体式大语言模型已被设计用于许多不同应用。在电子商务中，它们可以帮助理解用户偏好并执行推荐。在医学中，它们可以阅读并总结诊断文本。在金融中，它们可以分析财务报告并向交易员提供建议。在科学与教育中，它们可以协助文献研究、生成运行实验的脚本、分析结果、帮助撰写论文，并帮助评审论文（第~\ref{sec:assist} 节）。
+%(Niki: would be good to add references explicit to these parts.
+
+\subsection{行为}
+在第五部分，我们从技术视角转向研究智能体式大语言模型在单智能体与多智能体环境中的行为。在讨论大语言模型的基本行为特征之后，第~\ref{chap:behavior} 章讨论了由大语言模型驱动的智能体在改编自人类行为学方法、以及专为人工智能基准开发的任务框架上的表现。第~\ref{chap:role} 章细致考察了建立在预定义角色与协议之上的多智能体交互。在第~\ref{chap:emergent} 章，焦点转向开放式设定：研究对象是从智能体之间小规模交互中在系统层面涌现出的行为结构、规范与惯例。
+
+在第五部分讨论的各类方法与研究中，识别出若干反复出现的模式。包括关于构念效度（观察如何推广到人类情境）、提示敏感性与级联效应（尤其在多智能体环境中）、知行差距（模型在语言上预测的能力往往不能很好地转化为行动）、结构化推理的正面效果（增加推理预算在与人类推理思路一致的结构下尤其有用），以及期望方向（在同等算力预算下超过基线）与非期望方向（违反规范）的涌现性质。
+
+\section{局限与未来工作}\label{sec:limitations}
+%\section{Conclusion}
+智能体式大语言模型建立在大语言模型能力之上，极大地扩展了大语言模型的能力与用途。然而仍有许多局限，我们接下来讨论。
+%Agentic LLMs have shown how the capabilities of language models can be expanded by interacting with the world around them. We have discussed their  impressive achievements. However, limitations remain that offer opportunities for further research.
+我们从较为技术的记忆、规模、可解释性与认知架构，逐步过渡到具有广泛影响的主题，例如可能的感受性或意识，以及由此类属性引出的伦理影响。其中一些主题的解决方向已在前述各章讨论过。
+
+\subsection{记忆与自我反思}
+语言模型是函数：它们计算出的输出仅基于其输入——在调用之间它们没有记忆。为了让智能体在世界中自然地行动、进行对话、通过自我反思从行动中学习，智能体必须能够记忆。对我们而言，我们的身份有赖于记忆的能力。智能体需要某种形式的记忆。
+
+实现初步记忆的一种简单方式是把过往交互历史回填进提示——当前的聊天机器人成功地使用了这一方法。然而，尽管长上下文模型的研究取得了一些成功，上下文窗口的规模仍然有限。智能体式记忆方法是一个活跃的研究领域。大语言模型应学会如何最好地压缩信息，并将其存入长期或短期记忆。
+
+智能体可以通过检索增强生成式人工智能方法（RAG）访问外部信息，例如从企业数据库中检索。
+正在开发精细的智能体式记忆架构，以向量数据库中的文本或 token 嵌入形式为智能体提供更长期的记忆（第~\ref{sec:memory} 节）。
+%Reflexion has short term and long term memory.
+
+\subsection{规模}
+随着智能体能够自我反思并从与环境的交互中学习，我们应当讨论底层语言模型的规模化问题。
+
+大语言模型发展中的一大挑战是如何进一步提升其性能。最初，规模是主要决定因素——这也正是{\em 大}语言模型这一名称的由来——只有规模足够大、且在足够大的文本语料上训练的模型才能达到足够的基准性能，也只有大模型才表现出上下文内学习。因此，扩大模型规模与数据规模似乎是前进之路。然而，进一步扩展正变得越来越困难，因为互联网上可获得的多数高质量数据如今都已用于训练当前模型。而且，训练更久、更大的模型成本高昂；时间、金钱与电力消耗都在限制这一方向。当前方法正在触及平台期 \citep{sutskever2024}。
+
+要进一步提升大语言模型性能，重要的是持续获取有挑战性的训练数据（第~\ref{chap:synthetic-data} 章）。一种做法是把智能体式大语言模型与其环境的交互用作训练数据。当这些交互数据是新的、多样的且高质量时，它可用于预训练（另见图~\ref{fig:virtuous}）。请注意，GRPO 与 RLVR 等推理时方法已经在利用推理时结果进行微调并取得良好效果 \citep{guo2025deepseek}，而 VLA 是在自生成的行动数据上训练的 \citep{black2024pi_0,brohan2023rt}，见第~\ref{chap:world} 章。
+
+\paragraph{过度思考}
+对思维链的规模化研究也揭示了「更多思考努力」的局限。思维链在某些领域比在另一些领域效果更好 \citep{sprague2024cot}。而且，更深的推理可能导致{\em 过度思考}：随着投入更多努力，推理过程反而变得不那么有效 \citep{liu2024mind,wu2025more}。相关研究仍在进行，并不断揭示思维链如何运作的更多洞见 \citep{chen2025does}，以及哪些机制是有效的 \citep{chen2026think}。
+
+\paragraph{开放世界模型与课程学习}
+要让规模化路线奏效，合成训练数据必须多样、且不同于既有数据。开放世界模型的研究目标正是生成多样的训练环境。开放世界模型的想法是：它可以创造无限的数据集或环境，让智能体在其中持续学习、不断提升智能 \citep{bruce2024genie}。开放世界模型受演化算法、质量多样性（quality diversity）与计算机游戏的启发 \citep{vinyals2019grandmaster,mouret2015illuminating,meta2022human}。
+
+进一步提升模型性能的另一条路径是创造更好的训练方法。课程学习建立在这样一个观察之上：如果先让系统在容易的任务上训练、再尝试更难的任务，多数学习都会更有效。（这对人脑与人工神经网络都成立。）在多数领域中都存在一个概念层级，彼此相关、层层递进。（在学校里，我们先学加法，再学长除法，乃至对数。）课程方法正在预训练与后训练两个阶段被尝试 \citep{chen2025self,elgaar2026curriculum}。
+\subsection{幻觉与可解释性}
+当前智能体式大语言模型的另一个局限是幻觉问题：模型常常给出听起来合理、但事实上错误的答案，而且它们陈述的推理对其产出未必具有因果责任——这一性质被称为\emph{忠实性}。
+
+可解释人工智能（XAI）领域提供了一系列技术来应对这一问题，从把模型视为黑箱的 SHAP、LIME 等行为式与归因式方法，到在内部表征中探测人类可理解特征的基于概念的可解释性。更进一步，如第~\ref{chap:mi} 章所讨论的机制可解释性（MI）旨在逆向工程出 Transformer 模型内部的计算回路。
+
+稀疏自编码器、神经透镜与激活修补等工具已被用于识别导致幻觉的具体回路，并提供了经验证据表明：在足够大的架构中，思维链推理可以是模型行为中一个忠实的、因果上活跃的组件。随着智能体式大语言模型越来越多地被部署在高风险场景中，MI 提供了一条通往幻觉检测器的路径——当模型的内部置信特征与其外部输出不一致时即触发。这是走向可问责智能体系统的关键一步。
+
+再进一步，是对人类与 Transformer 之间认知架构的比较。语言模型产出自然语言的方式似乎与人类相似。这是因为产出话语的架构相似，还是出于巧合，抑或另有解释？第~\ref{chap:cognition} 章探讨了这个问题。
+%\todo{Max; please check and add}
+
+\subsection{情绪行为与意识}
+%- anthropomorphization and consciousness: attributing human elements to non-human entities, including when an entity should be considered conscious.
+人类有拟人化的倾向：当周围的无生命物体以类似我们的方式行为时——有时甚至并非如此——我们就把有目的的行为归给它。我们可能隐含地把意识归给这类物体。这使我们相信并说出{\em 计算机在思考}、{\em 计算机想要}、{\em 计算机一定感觉不太好}（甚至{\em 这本书喜欢被阅读}）之类的话。大语言模型遭遇同样的命运，它们的话语有时甚至能说服最理性的哲学家相信它们有目的（而它们显然不可能有目的，因为它们只是由机械装置执行的算法——不像我们，我们是有机的）。\footnote{请注意，鸭子类型（duck-typing）的观点不这么看：这种行为主义观点认为，如果它走起来像鸭子、叫起来像鸭子，那我们就当它是鸭子。}
+% er is nog een variant die niet op het wat infantiele idee van duck-typing berust: intelligence/life is computational zoals Blaise AyA het verdedigt. LLMs zijn computerprogramma's, wij zijn computerprogramma's; de hardware en software verschillen op veel punten, maar niet op alle punten. Ik ga proberen dit in 21 helder te krijgen zonder dat het veel pagina's worden.
+
+已有报告记录了聊天机器人与人类之间的情感关系，有时导致危险行为，甚至更糟。
+
+意识这一主题在人工智能哲学家中被积极讨论。意识通常被认为意味着对自身与环境有所觉察，并拥有主观体验、思想与感受 \citep{velmans2009understanding,butlin2023consciousness}。但我们如何检验意识？
+一种务实的观点是：对我们的社会而言，行为才是要紧的。如果一个实体行动，其行动的后果才是重要的，而该实体是否有意识则不那么重要。\citet{bengio2025illusions} 主张，仅仅通过行动造成的意识假象也会产生后果，而且我们将越来越难以辨别有意识与无意识的实体。他们主张，社会必须找到应对会行动的智能体的答案，无论是在医学、金融还是科学领域。功劳与责任最终都必须以公平的方式归属，并且必须找到处理自保型人工智能系统的答案。%\todo{Michiel?} 
+
+\subsection{社会行为}
+我们讨论过大语言模型如何模拟人类推理（第~\ref{chap:behavior} 章），以及大语言模型如何改进多智能体系统中社会行为的模拟。当前智能体社会行为模拟的一个局限是，行为受提示脚本的强烈影响。尽管一些研究报告了逼真的社会行为，许多研究也发现了大语言模型失败的界限。
+
+此外，对大规模涌现行为的研究带来挑战（第~\ref{chap:emergent} 章）。
+与所有多智能体模拟一样，验证涌现行为以判断模拟行为有多逼真是一个挑战，尽管一些研究报告了令人印象深刻的结果 \citep{park2024generative}。%\todo{Max: uitbreiden?}   
+
+\subsection{法律与伦理方面}
+%to act in the real wor- legal: explainable, responsible, liable, ethical behavior by algorithms. Beyond our current expertise, deserves dedicated book.
+助手在真实世界中的行动具有真实世界的后果。对于会行动的智能体式大语言模型，当不完美模型的行动带来真实世界后果时，存在许多法律与伦理挑战。当金融交易助手产生幻觉，或自动驾驶机器人做出错误推断时，责任与赔偿的问题应当在此类系统部署到真实世界之前得到处理。
+
+%An interesting trade-off occurs between breadth of the application domain and accuracy of the answer.
+%The application areas  for the assistants in this survey---shopping, medical diagnosis, finance---are  narrow. The narrower the application domain, the better the answers. 
+
+%More legal and ethical questions arise, for example, on privacy and fairness, and, possibly, concerning the rights of algorithmic entities \citep{harris2021moral,bengio2025illusions}. 
+一个主要的研究领域是在技术层面提升安全性。
+确保智能体式大语言模型的安全性，要求超越基于提示的防御，走向集成的多层防护。在安全强化学习领域，一个关键方向是在智能体的行动上、以及在智能体的推理与规划流程中加入显式的安全约束 \citep{gu2024review}。
+
+提升安全性的另一条路径是采用持续对抗训练与自动化红队测试，以增强对操纵的鲁棒性。进一步的优先事项是开发自我调节与风险意识机制，使智能体能够检测并避免不安全行动，以及建立严格的标准化安全基准 \citep{andriushchenko2024agentharm}。这些措施合起来，勾勒出一条在高风险领域中可问责、可信赖地部署智能体式大语言模型的路线图。
+
+然而，关于谁对智能体行动负责的法律与伦理问题依然存在。既然智能体已开始被用于真实世界，处理这些问题就变得至关重要。
+显然，在智能体式大语言模型的各种可能性被充分享用之前，
+许多安全、伦理与信任问题
+都必须得到处理。
+安全与伦理将成为智能体式大语言模型研究议程上的重要主题，值得有专门的综述与专著 \citep{gan2024navigating,jiao2025navigating,raza2025responsible}。
+
+
+
+
+\subsection{犯罪}
+当我们考虑犯罪行为时，关于伦理与意识的讨论就变得相当具体。技术发展既可为守法者所用，也可为违法者所用。它们也可被用于尚无有效法律规制的不道德行为。
+随着智能体式大语言模型能够展现越来越可信的行为，区分真实行为与人工行为将变得困难。这可能导致危险的伦理处境，例如犯罪分子利用该技术影响毫无戒心的受害者的行为。
+
+合法劝说、滥用信任与欺诈之间的界线可能并不清晰。
+智能体式大语言模型将大幅提升社会工程的手段水平——在社交网络、营销、间谍活动与网络犯罪中使用有说服力的算法 \citep{kshetri2025transforming,lupinacci2025dark}。尽管智能体式大语言模型也可用于打击犯罪 \citep{challita2025redteamllm,andriushchenko2024agentharm}，但社会意识赶上这些风险还需要一段时间。% \todo{Lastig om goede statistieken te vinden over cybercrime}
+尤其是对社交网络与大语言模型不太熟悉的人，可能容易上当受骗、成为智能体式大语言模型网络犯罪的受害者。
+\subsection{应用的局限}
+智能体式大语言模型的应用清单很长。已创建的概念验证在初见之下其成果令人印象深刻。但当我们更深入地审视结果时，会看到一些不易修复、且可能在智能体用于真实世界时带来严重后果的局限。
+
+\subsubsection{人工智能科研}
+许多智能体式大语言模型是为支持科学研究而开发的。研究流程的所有阶段都有支持。文献总结工具帮助构思阶段，已有工具可为不同领域生成运行实验的脚本，也有对数据解读与绘图的支持，还有写作支持，以及辅助审阅科学稿件的工具。确实，产出写得漂亮、表面上好看的研究论文正变得越来越容易。
+
+在数学中，有报告称大语言模型智能体在几何 \citep{trinh2024solving} 与代数 \citep{hubert2025olympiad} 两方面都达到了数学奥林匹克水平，成果令人印象深刻。这些系统包含 Transformer 网络，但在其他方面被设计为数学求解器，使用 Lean \citep{de2015lean} 等专门的自动定理证明技术与强化学习 \citep{silver2017mastering,browne2012survey}。
+
+2025 年，一项基准研究在从机器学习起步的一系列领域上评估了人工智能科研工具 \citep{nathani2025mlgym}。使用当时的前沿模型，作者并未发现模型能够生成新颖的
+假设、算法、架构，或做出实质性的科学改进。作者特别指出，{\em 现代大语言模型智能体能够成功处理多样化的定量
+实验，体现出高级技能与领域适应性}，但也指出{\em 科学新颖性这一概念能否
+被成功自动化，甚至能否以适合智能体的形式被形式化定义，目前尚不清楚}。
+
+
+
+\subsubsection{电子商务}
+行动责任是在电子商务中部署智能体式大语言模型的一大问题。安全与隐私顾虑会阻碍用户向易泄漏的计算机系统提供个人细节与偏好。这导致推荐系统的第 22 条军规：当用户不愿提供关于真实偏好的详尽信息时，建议质量就会低，用户对系统信任度低，从而更不愿提供信息。只有当以安全可靠的方式收集高质量偏好信息很容易、且模型能够提供强而有用建议时，面向电子商务的智能体式大语言模型才会被公众接受。
+
+\subsubsection{交易}
+对金融交易而言，责任至关重要。
+研究报道大语言模型在总结大量财务报告方面可以优于人类分析师。然而在金融交易中，利害很大。错误的交易建议会直接带来财务损失。此外，鉴于金融市场的不可预测性，识别一个错误模型可能需要时间，因为很难判断某次个别损失是由模型的不完善造成、还是仅仅因为运气不好。模型在被足够信任而投入使用之前，应经过彻底测试。除非做到万无一失，自动化交易系统不会超越对人类决策的支持。
+
+金融领域的大语言模型大多在分析文本报告上取得成功。对金融数据的时间序列分析已有一些结果发表，但难以获得可靠且可验证的基准结果。
+尽管一些研究声称结果良好，另一些则报告智能体式大语言模型对金融市场结果的预测仍存疑问 \citep{li2026can}。%are better thanSummary of text, yes, quality of quantitative predictions low. 
+
+ 
+
+
+\subsubsection{医学}
+在医学中，结果的准确性与尤其是可解释性，对可信度更为重要。在医学中，模型预测直接关系到行动的责任与伦理。对医学应用而言，结果的可解释性至关重要，智能体式大语言模型系统将把人类纳入决策回路。
+
+与交易一样，智能体式大语言模型在医学中最有前景的结果，是在文本文件的分析与总结方面，例如会议报告或文献综述。在治疗方案决策、执行手术等其他应用中的结果则有限。
+
+医学很可能既是智能体式大语言模型最有价值的应用领域之一，同时也是最保守的应用领域之一。在生死攸关的事情上，我们应当格外谨慎；同时，潜在收益又很大。
+\section{结语}
+%Some appropriate words on the future of agentic LLM. 
+
+智能体式大语言模型技术正快速发展。本书沿着三个相互关联的支柱追踪了这一发展：\emph{推理}、\emph{行动}与\emph{交互}。推理型大语言模型通过思维链、自我反思与检索增强提供认知基础：模型已能进行多步问题求解、文献综合与复杂决策支持。行动型智能体把这一基础延伸到真实世界，使用工具、API 与世界模型，在从机器人学到金融、医学的各个领域中协助用户。交互型智能体走得更远，在多智能体模拟中彼此互动，展现出合作、信任与规范形成等涌现的社会行为，而这些行为并未在提示中被显式编写。
+
+这三大支柱是相互连接的。如图~\ref{fig:virtuous} 所示，它们构成一个循环：推理使更好的行动与交互成为可能，而由（交互）行动的智能体产生的数据，又可用于预训练与微调更好的推理模型。这一良性循环为超越大语言模型规模化的平台期提供了一条有前景的路径，因为来自智能体式助手、机器人系统与多智能体模拟的推理时交互数据，提供了一个持续补充的、高质量且多样的训练信号来源。
+
+然而，三大支柱都仍有重大挑战。幻觉削弱了对推理链的信任，并威胁自我改进系统的稳定性。在高风险领域中，行动型智能体的安全、责任与伦理问责仍未解决。大规模多智能体系统中的涌现行为仍难以验证与控制。要在机制可解释性、开放世界模型、可扩展模拟基础设施与稳健安全基准等领域开展进一步研究，才能克服这些挑战。
+ 
+我们正处在一个早期而关键的时点。概念验证令人印象深刻；真实世界部署正在开始；而关于记忆、元认知、意识与集体智能的理论基础，仍是把人工智能与哲学、认知科学和法学连接起来的开放问题。本书旨在为你提供参与这些问题所需的技术根基与概念词汇。这个领域需要这样的研究者：既理解智能体式大语言模型今日能做什么的力量与局限，也能帮助塑造它们明日将成为什么。
+
+\begin{comment}
+
+\chapter{Conclusion/Future}\label{chap:conc}
+The interest of society and the AI research community  in Agentic LLM is
+large, and many papers have been written.  We have reviewed the field, with an emphasis on the most recent works.
+
+%\paragraph{For Society}
+There is an interest from society in Agentic LLM. LLM agents can  assist us in our daily
+lives in many ways---from writing essays, booking flights, having pleasant and
+interesting conversations, folding our laundry,
+to making better medical diagnoses, performing
+better stock analyses, to
+support healthy lifestyle changes, to make sure we take our medicine, to assist us when we are less mobile. Tool use by assistants is enabled by technology from the first category of the taxonomy: reasoning LLMs, self reflection and retrieval augmentation. 
+
+%\paragraph{For Science}
+There is also an %great 
+interest from science in Agentic LLM. %multi-agent simulation. %from the social sciences, including economics and political science
+% in multi agent LLM simulations.
+%: when LLMs become agents; with
+Since LLM agents can now  interact in natural language, agent behavior can be better understood, and multi-agent simulations can be made more realistic more easily than before.
+%whose
+%behavior becomes more realistic, 
+Important questions in social and political science can be
+researched, such as in game
+theory (social dilemmas), social interaction (negotiation, theory of
+mind),  and societal development
+(cooperation, norms,  the rise and fall of empires).
+Some of these  goals are  within  reach,  some have been realized already, and some become a possibility. 
+%From our survey, we conclude that the commercial and scientific expectations
+%are warranted. We also believe that many more fields (chemistry?) will
+%find uses for the progress afforded by the combination of agent
+%technology with LLM technology.
+Agent interactions are enabled by the previous two categories (reasoning and acting): social reasoning benefits from self reflection, negotiation actions are grounded,  information can be retrieved.
+
+%\paragraph{For Artificial Intelligence}
+Assistant interactions and agent simulations generate new training data. Where %There is also great interest from the LLM community  in Agentic LLMs. 
+there are signs that LLM training on existing data from the
+internet is plateauing, the newly generated interaction data can be used for further training. This data is not human-generated, but from interactions with artificial agents. It remains  a topic of future research to understand how this impacts LLM training and finetuning. Results with Vision-Language-Action models that are trained on self-generated action sequences % of actions that are generated by robotic interaction 
+are promising. They show results in domestic tasks (kitchen tasks, folding laundry) that had not been achieved by other machine learning methods.
+
+%. Agentic LLM can be a  way to generate new, high quality, interactions, and thus new training data. We note, however, that many methods that are inference time methods, and the training scheme used is in-context learning, where model parameters are not changed. In order to train the LLM with the new data that is generated by the agentic methods, the data should be used in finetuning and pretraining schemes.
+
+%\subsection{Advantages}
+%The joining of LLMs and agents has opened up many opportunities and goals.
+%To reach these goals, the papers that we have reviewed aim for LLM agents
+%that are (1) intelligent, (2) active, and (3) cooperative, for the
+%good of society and to generate more training data for LLMs.
+
+%We have reviewed papers that report significant progress in all three fields.
+The use of reasoning models for areas such as shopping recommendations, financial analysis, and medical diagnosis has attracted attention to AI assistants. LLM agents can also navigate social dilemmas and realistically simulate emergent behavior in multi-agent interactions. % prompted research in LLM-based agent simulations. 
+Reinforcement learning results in robotics with Vision-Language-Action models have attracted interest in inference time data to augment finetuning. Together, these developments have attracted interest in Agentic LLMs, and the synergy between  three developments has increased the interest: reasoning LLMs allow strong decision making; agent technology allows assistants
+to interact in the real world; these interacting agents generate behavior on which models can be pretrained and finetuned, improving the performance of the base LLMs. Figure~\ref{fig:virtuous} illustrates this cycle of continuous improvement. 
+
+
+%\subsection{Challenges}
+%Agentic LLMs are at the beginning of their development, with many
+%experiments of new ideas still being tried. 
+%The field is quite active, the interest of research is high, 
+%as are commercial expectations. Given how young the field is, there is a tension between the level of expectations of society and the level of maturity of research results. 
+%Many challenges still remain.
+
+%\subsubsection{Reasoning}
+%We will list challenges to improve step by step reasoning intelligence of Agentic LLMs
+%further.
+\subsection{Research Agenda for Agentic LLM}
+The  interest from researchers in Agentic LLMs is large. Our survey has yielded interesting topics for a research agenda for Agentic LLM. Please refer to Table~\ref{tab:agenda} for a summary of the agenda.
+
+
+\paragraph{Hallucination and Stable  Behavior}
+A challenge for the virtuous autocurriculum cycle is that LLMs hallucinate. LLM answers may look good, but be factually wrong. Reasoning chains may be unfaithful, giving good answers for the wrong reason, and giving wrong answers when least expected. Especially when such dubious results are used to in further train the LLM, this training may diverge. In social simulations, emerging behavior patterns, such as cooperation, fairness, trust or norms, may collapse. In multi-step reasoning, self verification and self consistency methods were developed to address error accumulation. In reinforcement learning, exploration and diversity are important methods to ensure good coverage of the state space. 
+In social simulations and gaming, open world models and open-ended behavior are being used to stimulate exploration and diversity. Such models can provide suitable environments for automated generation of training curricula. 
+
+Faithfulness for Chain of Thought is studied by
+\citet{lyu2023faithful,lanham2023measuring,turpin2024language}.
+Mechanistic interpretability can provide ways to look inside the LLM,
+to better understand if the model follows the reasoning steps that we expect it to take
+\citep{nanda2023progress,bereska2024mechanistic,ferrando2024primer}. 
+The conditions that influence stability of emergent behavior (cooperation, fairness, trust) may be studied further.
+
+For Agentic LLMs that learn  from their own results, other methods will need to be developed, and hallucination features prominently on the research agenda for Agentic LLM, with mechanistic interpretability and open world models and norms as important items.
+
+% In step-by-step reasoning it leads to faithfulness issues, in assistants it leads to safety and security issues, in multi agent simulations it leads to low robustness in understanding social dilemmas. Research into Mechanistic Interpretability \citep{nanda2023progress} may yield more insights into what is going on inside the models, and may yield ways to reduce hallucination.  Open world environments may help provide diverse training data for hardening models, reducing hallucination.
+
+\paragraph{Agent Behavior at Scale}
+Studies of emergent behavior need realistic agent behavior, and we expect more research to be performed to improve agent behavior, for example by closely modeling human behavior in generative agents \citep{park2024generative}. Some behavior patterns in multi agent simulations emerge at scale, as  studies with specialized agent infrastructures have shown \citep{park2023generative,yang2024oasis,wu2023autogen}. However, the  number of LLM agents that can be simulated reliably is often limited. Although role-based agent approaches may improve scalability, we believe that  more research into scaling of simulations with complex agents is necessary.
+
+Related to this challenge is the cost of training LLMs. Pretraining and finetuning an LLM can be expensive. Knowledge distillation is  a popular method to extract essential knowledge and behavior from a large model into a small model, at much lower computational cost \citep{xu2024survey}.  Experiments have
+shown that reasoning steps can be distilled from large to smaller
+language models \citep{gu2023minillm,li2023symbolic,muennighoff2025s1}. Knowledge distillation in LLM agents in an important item for our research agenda. 
+
+The debate on artificial super-intelligence is fueled, in part, by the growing performance of individual LLMs, which is an important aspect of Agentic LLM research. Another aspect of Agentic LLM research is the study  of emergent behavior, of cooperation and trust in agentic societies.  Such studies of agent behavior at scale  may influence our view on the nature of intelligence, and may influence the
+discussion on artificial super-intelligence and the future of  society. Furthermore, the world around us is organized in groups in which power hierarchies
+are prevalent. Many multi agent simulations assume a flat power
+hierarchy. %More research is needed into power dynamics.
+Multi agent simulations should also go beyond equality.
+
+
+\paragraph{Self Reflection}
+%\paragraph{Self Reflection}
+Self reflection mechanisms are used in  advanced prompt-improvement algorithms. External explicit prompt management may be error prone and brittle. An alternative is  to let the LLM perform the self reflection and step-by-step management internally, as in the original  Chain of Thought. 
+DeepSeek R1 \citep{guo2025deepseek} is a reasoning model that is trained (finetuned) by the GRPO reinforcement learning method \citep{shao2024deepseekmath}. The model is trained  on its own reasoning results, and was found to self-reflectively reason over its own results, identifying effective reasoning patterns implicitly. 
+
+\citet{schultz2024mastering} train a model on search sequences \citep{gandhi2024stream} in games such as chess, and VLAs are trained on action sequences \citep{kim2024openvla}. Their work shows that, in addition to implicit step-by-step reasoning, implicit search is possible. An open question is whether LLMs can perform self reflection internally. %Can we find ways to
+%follow tree shaped search paths  implicitly, with a single prompt,
+%without the need for an external algorithm?  
+
+The addition of external state to an LLM has enabled reasoning and a form of self
+reflection, which is a form of metacognition (thinking about thinking). 
+%Some of the prompt-improvers exhibit a form of self reflection. Can
+%LLM agents also exhibit meta cognition? How can we test if this has been achieved?
+%Advanced prompt-improvement algorithms are typically external
+%optimization or tree traversal loops. Simple step-by-step sequences are
+%implicit (single prompt). For the sake of elegance, can we get the LLM to do advanced
+%optimization/tree traversal with a single prompt, implicitly? And can we then use 
+%mechanistic interpretability to verify that the model  follows a tree?
+%
+%
+%\paragraph{Meta Cognition}
+% 
+LLMs that reflect on their own behavior raises visions of true
+artificial intelligence. %Meta cognition is thinking about
+%thinking. 
+If  LLMs can self-reflect, can they exhibit metacognition \citep{wang2023metacognitive,didolkar2024metacognitive}? 
+Self reflection by LLMs is another item for the research agenda. 
+% How can we test this? 
+
+Self reflective methods are being used to create agents to perform scientific discovery \citep{eger2025transforming}. How these agents will influence, and possibly improve, the process of scientific discovery is an exciting area of research. 
+
+%\paragraph{Identity}
+When we add outside state to the input prompts, the input to the LLM will differ based on the history, and so will the answers of the LLM. Differences in memory may be preceived as a
+ personality of the LLMs by its users. The question if LLMs with outside memory exhibit a personality is a topic for future research. 
+%Does the personality influence
+%the behavior of the LLM? Do humans recognize different LLM
+%personalities? Do LLMs have an identity? Should agents have rights?
+
+
+
+%\subsubsection{Active}
+%We will list the challenges to improve Agentic LLM actions in the
+%world further.
+
+
+\paragraph{Safety}
+Safety is an important issue in LLMs that act in the world. The
+problem is  studied, but far from being solved
+\citep{brunke2022safe,andriushchenko2024agentharm,samvelyan2024rainbow}.
+Actions by assistants and robots in the real world have real world consequences. When a financial trading assistant hallucinates, or when a self driving robot makes a wrong inference, questions on responsibility and liability should be addressed. More legal and ethical questions arise, for example, on privacy and fairness, and, possibly, concerning the rights of algorithmic entities \citep{harris2021moral}. 
+
+The application areas  for the assistants in this survey---shopping, medical diagnosis, finance---are  narrow. The narrower the application domain, the better the answers. 
+Clearly, many safety, ethics and trust issues
+will have to be addressed before the full breadth of the possibilities
+of Agentic LLMs can be enjoyed.
+Safety will continue to be an important topic on the research agenda of Agentic LLM.
+
+
+\begin{table}
+    \centering%\footnotesize
+    \begin{tabular}{ll}
+     {\em Topic} & {\em Challenge} \\ \hline 
+        Training Data & Finetune with inference time reasoning data\\
+        & Convergent/stable reinforcement learning  \\
+        & VLA, Multimodal signals, such as speech \\ \hline
+         Hallucination & Use Self Verification \\
+         & Use Mechanistic Interpretability \\
+         & Use Open Ended/Open World Models for exploration\\ \hline
+         Agent Behavior & Scalable simulation infrastructure, role playing\\
+         & Distill reasoning to small models\\
+         & Models of agent and human behavior, emergent behavior,  future of society\\ \hline
+         Self reflection & In-model self reflection and metareasoning\\
+         & Metacognition, personality\\ 
+         & Automated Scientific Discovery \\ \hline
+         Safety & Assistants: Responsibility, liability\\
+         & Privacy, fairness of data\\
+         & Wider  application areas for assistants\\ \hline
+    \end{tabular}
+    \caption{Summary of Research Agenda for Agentic LLM}
+    \label{tab:agenda}
+\end{table}
+
+%\begin{table}
+%    \centering\footnotesize
+%    \begin{tabular}{lll}
+%    {\em Area} & {\em Topic} & {\em Challenge} \\ \hline 
+%        Intelligent & Multi Step Reasoning %Inference-time data   
+%        & Use inference-time results to finetune models  \\
+%        &Self Reflection & Explore Implicit search/Meta-cognition  \\
+%        & Retrieval Augmentation & Distillation to Small Language Models \\ \hline
+%    
+%        Active &  Robot/Tools %Hallucination
+%        & Hallucination: Mechanistic Interpretability   \\ 
+%        & & Develop Reflection/Verification methods \\ 
+%        & & Use Open World agents/Automated curricula \\ 
+%         & Action Models & Improve VLAs/World Models \\
+%         & Assistants & Study privacy and  liability issues \\ \hline
+%        LLM-Agent Based Models & Dyadic Interactions %Robust agent behavior  
+%        & Improve modeling with agent roles \\ 
+%         & Agent Societies % Robust emergent behavior  
+%                                & Develop scaling infrastructures\\ 
+%        & Small Groups & Explore power hierarchy models \\  \hline
+%    \end{tabular}
+%    \caption{Summary of Research Agenda Agentic LLM}
+%    \label{tab:agenda}
+%\end{table}
+
+\section{conclusion}
+We survey recent papers on Agentic LLMs, with a taxonomy based on three categories: reasoning/acting/interacting. The first part of the survey covers approaches on {\em reasoning} and retrieval.
+Initially, LLMs score high on language understanding tasks such as general question answering, but not on reasoning tasks such as math word problems. Using approaches based on Chain of Thought's {\em Let's think step by step} prompt, reasoning LLMs have become better in solving math word problems, and also in solving more complex reasoning tasks. Models are also surprisingly good at analyzing medical diagnosis documents, financial statements, and social dilemmas. The first part of the survey covers the reasoning technology that enables the next two categories, where agents  act and interact.
+
+LLMs have been enhanced with interfaces to use tools for information retrieval, and to act in the real world, potentially making capable assistants. Reasoning and self reflection allow for  complex interactions and self verification. The second part of the survey covers assistants that {\em act} (including robots and world models). Enhancing LLMs with action tools (such as for APIs) turns them into agents. Examples of such agents are assistants that analyze medical diagnosis documents, or that recommend trading actions on the stock market. Although language can have real world consequences,  the surveyed papers describe proofs of concept, but not yet actual deployments in the real world. Results are promising, but before real world deployment can be considered, questions on liability may need to be addressed first, especially  in high impact applications in medicine and finance. Applications in companionship, and for shopping recommendations, may be closer to realization.
+
+In addition to the situation where a single assistant-LLM agent interacts with the world, agents can also interact with other agents. The third part of the survey covers {\em interaction}:  multi-agent simulations of societies of agents. LLMs are reasonably good at reasoning about agent behavior (theory of mind), and at understanding social dilemmas such as the prisoners dilemma and public goods games.  In comparison to classical agent-based simulations of social behavior, LLMs have increased the realism of such simulations, both qualitatively (one paper describes a realistic Valentine's day neighborhood party) and quantitatively (one paper reports a simulation of a social network with millions of agents). Social LLM simulations exhibit complex emerging behaviors such as cooperation, trust, and norms. Self reflection can improve LLM reasoning about behavior further.
+
+\paragraph{New data}
+At another level, taken together, the three areas of reasoning/acting/interacting enable an important change in the machine learning paradigm for LLMs: Agentic LLMs move from (self-)supervised learning to reinforcement learning.
+%
+Models learn from datasets---supervised---but agents learn from their own actions---interactively. LLM learning has been reported to plateau, since it becomes harder and harder to find new/better training datasets. The reinforcement learning approach lets agents act in an environment, improving the policy from environment feedback, changing parameters from inference time results. In Agentic LLM the models are active and can learn from self-initiated feedback in assistant and multi-agent simulation settings. They can continue to learn as long as the environments are challenging, just like AlphaGo Zero taught itself to play Go,  by playing against a copy of itself, with zero help from datasets of grandmaster games (and surpassing all human grandmasters). In agentic LLMs, inference time results can be used for pretraining and finetuning. In robotics, promising early results with Vision-Language-Action models are described, and some reasoning LLMs are being trained with reinforcement learning.
+
+\paragraph{Contributions}
+The contributions of this survey are as follows: we define Agentic LLMs as reasoning LLMs that act in the world and that interact with other agentic LLMs. In our survey: (1) {\em reasoning} LLMs provide the enabling technology for agentic LLMs; (2) interfaces to tools and APIs allow LLMs to {\em act}, turning them into agents, they can interact with the real world, as assistants for their users; (3) agent LLMs can also {\em interact} with each other, reflect on interaction  of self and others, in  multi-agent simulations of complex, emergent, cooperative, social behavior. 
+
+Our three-way taxonomy for agency is built on the reasoning technology of category 1,  which is growing in importance in agentic LLMs. Robotic interaction and tool-use builds on grounded retrieval augmentation, social interaction (such as theory of mind) builds on self reflection, and all categories benefit from reasoning and self-verification. Closing the cycle, the acting and interacting categories generate training data for further pretraining and finetuning LLMs,  beyond plateauing traditional datasets (Figure~\ref{fig:virtuous}). The impressive generalization capabilities of Vision-Language-Action models are testament to the power of this approach. 
+
+
+The reasoning paradigm connects to works in human cognition, and some papers anthropomorphize LLM computations in Kahneman's terms of System 1 thinking (fast, associative) and System 2 thinking (slow, deliberative). Works on reasoning focus  on intelligence of single (individual) LLMs. This individualistic view also gives rise to  discussions about superintelligence, some utopian, and some not. 
+
+The agentic paradigm enables an element of machine learning that is new for LLMs. In reinforcement learning, agents self reflect and choose their own actions, and learn from the feedback of the world in which they operate.   No dataset is needed, nor is learning limited by the complexity of a dataset, it is only limited by the complexity of the world around the agent. The agent paradigm  creates a more challenging training setting, allowing Agentic LLMs to keep on improving themselves, not being held back by human datasets.
+
+The multi-agent paradigm studies agent-agent societies. The focus is on emergent behaviors such as egoism/altruism, competition/collaboration, and (dis)trust.   Social cognitive  development and the emergence of collective intelligence are also studied in this field. Connecting back to the reasoning paradigm, multi-agent studies may inform discussions about (super)intelligence. 
+
+Our  agenda for future research includes suggestions for all three aspects of the taxonomy. In reasoning, many challenges remain in self reflection, metacognition and implicit search methods. The stability of training for self-generating inference time data should improve, for example with methods to improve exploration with open world models, and with mechanistic interpretability methods to better understand hallucination and faithful reasoning. For assistants, further work is required to improve performance in a wider application portfolio, as well as on ethical and legal issues. Agent simulations will yield better models of human and group behavior; we suggests work on improving  modeling infrastructures and on improving the realism of agent behavior. Furthermore, energy consumption may be reduced with small language models, using distillation methods; multi-agent studies may teach us about social behavior of LLM-agents (AI4Good). 
+
+\end{comment}
+
+\bibliographystyle{plainnat}
+\bibliography{agenticbook,refs,case,synthetic}

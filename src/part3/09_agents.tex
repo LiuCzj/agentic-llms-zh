@@ -1,0 +1,735 @@
+
+%\chapter{智能体式大语言模型的交互范式}\label{chap:agents}
+
+\chapter{智能体式大语言模型的交互范式}\label{chap:agents}
+
+%!!!!!!!!! 
+%The previous chapters introduced the foundations of Agentic LLMs: machine learning, language modeling, the benefit of size, in-context learning, multi-step reasoning, and finetuning and pretraining world models with data beyond language. We did so both at the prompt level, in-context, and at the parameter level, with pretraining and finetuning. The next part will introduce implementation methods and tools, to start building concrete agents. However, before we go to the next part, we will talk about learning  at the agent level,  how agents can learn from interaction with their environment. %For this purpose we will introduce a third type of learning: metalearning. 
+
+
+\begin{learningbox}
+本章将介绍智能体式大语言模型的不同交互范式与智能体记忆。
+具体而言，你将能够：
+\begin{itemize}[leftmargin=*, nosep]
+    \item 认识人工智能中三种不同历史类型的{\em 智能体}，以及它们与当今智能体式大语言模型的联系。  
+    
+    \item 认识五种不同的智能体式大语言模型{\em 交互}范式。 
+    
+    \item 理解{\em 记忆}在智能体式大语言模型中的重要性，并认识不同的智能体记忆架构。
+
+\end{itemize}
+\end{learningbox}
+
+
+\begin{comment}
+Agents interact with the world, and they can learn during their interaction with the world. In this chapter we will discuss five agent styles, that feature progressively more advanced agent learning. We start with static learning of simple LLMs, and progress towards  dynamic learning styles in which the knowledge of metalearning, from the previous chapter, is quite useful. 
+
+Next, we discuss the topic of memory. In order for its interacting with the world to make sense, an agent needs to remember its past actions. Memory is necessary for  coherent conversations, for learning and adapting  behavior, and, on a higher level, for creating an identity. For this, we need to provide our LLM agent with a form of memory.
+
+However, we start this chapter with a short overview on the role of agents in the field of AI. 
+\end{comment}
+
+
+\section{人工智能中的智能体}
+智能体在人工智能中扮演核心角色，我们先讨论人工智能中智能体的一些背景。%Then, in Section~\ref{sec:styles} we will bring together the learning approaches of the past chapters into five agentic styles. Agents need to remember their state. In Section~\ref{sec:memory} we discuss the different types of memory that agents can have. %An early version of material in this chapter appeared as \citet{plaat2025agentic}.
+%We will now provide a brief overview of agents in the field of artificial intelligence. 
+
+\subsection{智能体在环境中行动与适应}
+在人工智能中，能够在世界中采取行动的实体称为{\em 智能体}。它们相当于在世间行动的人类。在智能体这一概念中，人工智能研究者试图捕捉他们所理解的人类本质——通过构建来理解智能。
+
+智能体是在环境中采取行动的自主软件系统。它们（1）有目标，（2）感知所处环境，（3）作出决策，（4）采取行动以实现目标，而且最重要的是，（5）从经验中学习。
+智能体应当适应新信息，以便更好地实现目标；用强化学习的术语来说，智能体改进自身的行为策略。
+
+传统计算机程序是确定性的，它们可预见地遵循预设指令（这正是计算机在会计到控制等高度重视可预见性的领域如此有用的原因）。相比之下，大语言模型智能体的确定性和可预见性都更低。%(and not just for the reasons that were discussed in the previous chapter). 
+它们会学习，并且随时间改变自身行为。它们能够自主推理、规划，并借助工具执行简单工作流，在编程、客服、数据分析等领域为用户完成任务。（它们也会产生幻觉、犯错，总体而言不可预测、不可靠。就此而言，大语言模型智能体更像人类而非计算机。）
+
+智能体在人工智能中已被研究了相当长时间。
+区分三类智能体是有益的：（1）机器人助手型智能体，（2）信念-愿望-意图型智能体，（3）集群智能体。
+
+\subsubsection{机器人助手}
+我们先讨论作为机器人助手的智能体。
+这种对人工智能智能体的看法来自工程领域：智能体替人类执行类人任务。智能体是一种更轻松完成例行事务的工具。例如工厂里的焊接机器人、飞机上的自动驾驶仪，或是必须在不可预测环境中找到安全路线的自动驾驶汽车。
+
+这类智能体更多的例子是虚拟助手，如 Alexa 和 Siri，或是帮助软件开发者提升效率的编程助手（如 CoPilot），或是帮助客户在公司的规则迷宫中导航、以实现投诉或退款等目标的客服机器人。机器人助手型智能体可以具备可观的推理能力 \citep{dorri2018multi}，而大语言模型正越来越多地用于此类助手 \citep{plaat2025agentic}。
+
+\subsubsection{具有信念、愿望与意图的智能体}
+另一种对人工智能智能体的看法根植于认知科学领域。这里的目标是让智能体建模人类的认知过程，智能体具有信念、愿望和意图（BDI）。认知科学研究人类的思维过程。人工智能智能体可用于实现认知模型，并借此实验各种思维模型：该模型能否进行逻辑推理？能否在桥牌对局中与人类玩家合作？能否拆解莎士比亚的戏剧？能否创作音乐？能否具有自我意识？认知可以有许多精微的形式，例如解读感官输入、引导身体动作、与他人共情。
+
+最初的 BDI 智能体来自逻辑推理传统。它们被赋予目标，并通过行动追逐目标。该领域的文献将行动视为实现智能体目标的一种方式 \citep{rao1995bdi,georgeff1998belief}。
+
+\subsubsection{集群智能体}
+第三种对人工智能智能体的看法强调大量小型智能体之间的互动模式。此前的多智能体系统由少数复杂智能体构成——这些智能体会行动和思考，可以是助手型智能体，也可以是具有信念、愿望和意图（BDI）的智能体——而这一方法研究的是由许多简单智能体组成的群体与集群。如今重点在于涌现式协作行为，即规模超出智能体自身推理能力之后才涌现的行为。一个集群能否抵御捕食者？协作发生的前提是什么？何时社会和平、何时社会陷入战争？什么是超有机体 \citep{johnson2010deconstructing,wilson1989reviving}？
+
+集群智能体来自具身人工智能的联结主义传统 \citep{brooks1990elephants}。智能体之间相互通信，研究者往往关心大规模行为模式的涌现，如合作与通信。一个著名的集群算法是蚁群优化 \citep{dorigo2007ant}，一个著名的用于研究此类模式的软件环境是 NetLogo \citep{wilensky2015introduction}。\footnote{\url{https://www.netlogo.org}}
+
+多智能体系统与智能体式大语言模型都适合研究上述三种进路：作为工具的智能体、作为认知实体的智能体，以及帮助我们研究如何实现和平社会（或如何征服他人）的智能体。本书第四部分聚焦作为工具的智能体，第五部分聚焦认知与智能体社会。
+
+\subsection{作为强化学习智能体的智能体式大语言模型}
+智能行为的研究在人工智能中源远流长。智能体行为的核心面向之一是智能体如何在环境中学习。智能体从反馈中学习的机制由强化学习 \citep{sutton2018reinforcement} 与多智能体强化学习 \citep{wong2021multiagent} 研究。
+
+下一节我们将讨论智能体式大语言模型中出现的五种交互范式。作为这一综述的准备，我们将用强化语言为在世界中交互的智能体提供形式化基础。
+
+图~\ref{fig:rl} 展示了一个由智能体与环境构成的强化学习系统。在该系统中，智能体通过动作与环境交互，环境则以系统的新状态和奖励值作出回应，后者表明新状态有多好。
+
+智能体可以从这些奖励值中学习，记下在每个状态中哪些动作有利、哪些不利。智能体的目标是为环境找到最优行为，即每个状态下的最佳动作。智能体利用奖励来强化它对每个状态下最佳动作的认识，进而学到一个最优行为函数。这个把每个状态映射到一个动作的函数称为
+行为策略，记为 $\pi$。最优策略记为
+$\pi^*$。 
+%The parameters in a deep neural network are denoted as $\theta$, and the parameterized policy is thus written as $\pi_\theta$.  % The optimization goal of reinforcement learning makes sure that these actions are optimized, resulting in an optimal parameterized policy $\pi_\theta^*$ for the agent, telling it how to act optimally in  the environment.  
+如果智能体通过
+深度学习来学习，那么策略由神经网络
+的权重 $\theta$ 参数化。
+% reinforcement learning paradigm where the agents learns a parameterized policy from feedback on its interaction with the environment. In reinforcement learning, the agent and the world are modeled as a Markov Decision Process (MDP). An MDP consists of states, and actions that cause the MDP to transition to a new state.
+
+\begin{figure}
+  \begin{center}
+    \input figures/rl
+    \caption{强化学习循环：智能体在动作 $a$ 上从环境迁移 $T$ 与奖励函数 $R$ 提供的反馈奖励 $r$ 中学习参数化策略 $\pi_\theta$ \citep{sutton2018reinforcement}}\label{fig:rl}
+  \end{center}
+\end{figure}
+
+智能体运行于其中的世界由环境表示。智能体采取动作，改变环境的状态。环境有一个概率转移函数，只要智能体执行了某个动作，它就计算新的
+状态。环境同时也为新
+状态计算相应的奖励。因此，环境由两个函数建模：转移函数 $T$ 与奖励函数 $R$。%The goal of the agent is to compute in each state of the MDP, the best action to take. 
+
+这个「智能体在环境中行动、接收反馈以了解哪些动作带来了好的状态转移、哪些没有」的模型，与智能体式大语言模型的概念相当契合，下一节就会看到。
+
+
+\begin{figure}
+  \begin{center}
+    \input figures/rl-llm
+    \caption{智能体使用大语言模型将策略参数化为 $\pi_{LLM_{P\pi}}$，从而利用环境的反馈 $r$ 来选择动作 $a$ }\label{fig:rl-llm}
+  \end{center}
+\end{figure}
+
+从强化学习的视角看，我们可以把大语言模型用作智能体中的一个函数：$LLM(\text{提示词}) \rightarrow \text{回答}$。大语言模型可以用在强化学习的不同位置：智能体中，或环境里。例如，智能体可以把大语言模型用作策略改进器。它可以用某个提示词调用策略函数 $\pi_{LLM_{P\pi}}(s,r)$，该函数从环境反馈中学习在环境可能处于的不同状态下应采取什么动作（见图~\ref{fig:rl-llm}）。大语言模型收到的提示词 $P\pi$ 告诉它扮演策略改进器，利用奖励 $r$ 为状态 $s$ 返回一个动作 $a$。正如我们将在第~\ref{sec:icrl} 节看到的，上下文强化学习（ICRL）把大语言模型用作策略改进器，而思维树则可以用大语言模型来生成后继动作。
+
+\begin{figure}
+  \begin{center}
+    \input figures/rl-llm2
+    \caption{智能体与环境都为大语言模型的 $\pi$、$T$、$R$ 提供支持的强化学习。各个大语言模型分别收到提示词 $Px$，用以返回动作、状态或奖励值}\label{fig:rl-llm2}
+  \end{center}
+\end{figure}
+
+大语言模型也可以用在环境中，%for the two functions that we customarily see in the environment, 
+既用于计算状态的奖励 $LLM_{R(s)}$，也用于计算下一状态 $LLM_{T(s,a)}$，见图~\ref{fig:rl-llm2}。图中同一个大语言模型现在承担三种不同角色，对应三种不同提示词：执行策略函数、转移函数和奖励函数。例如，思维树可以用大语言模型评估一个状态的奖励。设计智能体式大语言模型有许多选项，
+下一节就会看到。我们以强化学习范式来讨论和说明不同的智能体范式。
+
+ 
+
+\section{智能体式大语言模型的学习机制}\label{sec:styles}
+智能体式大语言模型这一领域是新的，前面几章展示了大语言模型在智能体设定中被使用的许多不同方法。本节将回顾本书迄今出现过的这些方法。我们按提示方法与训练方法对它们加以区分。
+%Integreer Five Styles en Metalearning
+%8.2.1 Agent Styles
+%8.2.1.1 Query
+%8.2.1.2 ICL
+%8.2.1.3 CoT
+%8.2.1.4 ICRL
+%8.2.1.5 ReFT/RLVR/GRPO
+%8.2.2 Stable Learning (ReFT)
+%8.2.2.1 Metalearning few-shot history
+%8.2.2.2 inner/outer 
+%8.2.2.3 Stability techniques, incl HRM
+%8.3 Conclusion
+
+
+%Following the  agent types %, where agents have goals, and can reason, 
+我们将描述五种适配智能体式大语言模型的交互范式。
+表~\ref{tab:fourstyles} 概括了这五种智能体范式。%, as they have been developed in the literature. 
+我们聚焦大语言模型在推理时被运行框架提示的方式，以及它如何被训练。所有提示范式都能产出有用的智能体助手和交互伙伴，在某些领域中以符合现实的方式行动。更精细的提示范式是为在更具挑战性的领域中取得更好性能而发展出来的。
+
+表格第一列给出智能体交互范式的名称，从查询到强化微调。第二列列出各范式的提示类型，从没有任何例子的简单静态指令提示，到动态强化学习提示。第三列展示大语言模型的训练方法，即预训练、微调还是两者兼有。第四列给出该交互范式的一个具体例子（并附文献引用）。
+
+\begin{table}
+\footnotesize\centering
+\begin{tabular}{l|c|c|c}
+{\em 智能体类型} & {\em 提示} & {\em 大语言模型}  & {\em 例子} \\ \hline
+{\bf A}：查询 & 用户撰写的零样本  & 预训练   & GPT-2 \citep{vaswani2017attention}\\
+ & 查询或指令 &   & \\ \hline
+{\bf B}：上下文学习  & 少样本   & 预训练   & GPT-3 \citep{brown2020language}\\ 
+（监督式例子）& 例子 &    & \\ \hline
+{\bf C}：上下文学习  & 思维链步骤   & 预训练   & 思维链 \citep{wei2022chain}\\ 
+（推理步骤）& 例子 &    & 零样本思维链 \citep{kojima2022large}\\ \hline
+ & 反馈运行框架   &   & 思维树 \citep{yao2024tree}\\
+{\bf D}：自反思  & 提示词优化 & 预训练   &  LLaMea \citep{van2024llamea}\\
+ & 搜索或强化学习&   &   ReAct \citep{yao2022react}\\ \hline
+{\bf E}：强化微调  & 强化学习提示  & 预训练/   & RLVR  \citep{lambert2024tulu}\\ 
+ & 优化运行框架 & 微调   & \\ 
+\end{tabular} 
+    \caption{五种智能体范式}\label{tab:fourstyles}
+\end{table}
+
+
+\subsection{智能体交互范式}
+现在讨论各种交互范式。前三种智能体范式中，大语言模型的提示是静态的：提示词由用户撰写，不发生变化。
+
+
+\subsubsection{A. 查询式提示}
+第一种交互范式是给大语言模型一条简单指令来与它交互。图~\ref{fig:rlA} 展示了这种交互范式。它
+仅仅由用户撰写的一条指令构成。例如，{\em 莉莉错过了火车。她感觉非常 ……}，希望模型的回答是{\em 生气}或{\em 难过}之类。提示词纯粹是一次查询，没有任何训练例子。学习范式是零样本学习，仅有指令。
+%See Figure~\ref{fig:rlA}
+\begin{figure}
+  \begin{center}
+    \input figures/rlA
+    \caption{范式 A：静态查询}\label{fig:rlA}
+  \end{center}
+\end{figure}
+大语言模型能正确回答许多此类查询，是因为它已在大型文本语料上预训练，其中可能提供了用户会问的许多问题的答案。模型还针对指令问答做过微调。这种交互范式的例子是早期的大语言模型，如 GPT-2 \citep{vaswani2017attention}。
+
+
+\subsubsection{B. 上下文学习}
+接下来转向上下文学习。%, which allows an interaction style that caused the ChatGPT frenzy to starts. 
+对机器学习而言，
+上下文学习是一种令人兴奋的新学习类型，它是监督学习与强化学习之外的第三种。在大语言模型中，上下文学习常常仅凭几个例子就取得好结果，
+实现了机器学习领域的主要挑战之一。
+
+与交互范式 A 相比，上下文少样本学习是更复杂的交互范式。
+\begin{figure}
+  \begin{center}
+    \input figures/rlB
+    \caption{范式 B：基于少样本例子的提示进行上下文监督学习}\label{fig:rlB}
+  \end{center}
+\end{figure}
+当用户在查询之外再提供几个例子时，就发生了上下文学习。这样做时，用户对
+解码器模型施加了条件化，以激活其参数中所表示的大量知识的正确部分。
+
+图~\ref{fig:rlB} 展示了适配此交互范式的提示词一例。该交互范式的文献例子是 GPT-3。引入上下文学习的
+论文是
+\citet{brown2020language}。少样本提示词的一个例子是：{\em 补全虚线：大海-la mer，牡蛎-huitre，窗户-la fenetre，奶酪-……}，希望模型的回答是{\em fromage}。
+
+注意，只有当模型足够大时，上下文学习才会涌现。最初，上下文学习出现在
+参数约一千亿的模型中。在这个规模上，模型足够丰富，少数提示例子能激活模型的正确部分。随着大语言模型方法不断改进，这条边界持续缩小。
+
+\subsubsection{C. 思维链}
+接下来转向另一种著名方法——思维链学习 \citep{wei2022chain}，图~\ref{fig:rlC} 上图。该方法
+的开发，如我们在第~\ref{chap:reasoning} 章所见，是为了解决大语言模型在简单数学文字推理题上的弱点。原始思维链方法的一个缺点是，
+每遇到一个新的推理任务，用户都必须撰写新的提示词。后续的发展是零样本思维链提示，图~\ref{fig:rlC} 下图。\citet{kojima2022large} 发现，在提示中加入通用句子{\em 让我们一步一步思考}就能在许多基准上改善表现，
+尽管往往不如手写的任务专用提示。
+
+\begin{figure}
+  \begin{center}
+    \input figures/rlC
+    \caption{范式 C：上图：思维链——基于推理步骤例子的大语言模型上下文学习；下图：通常有效的零样本思维链指令}\label{fig:rlC}
+  \end{center}
+\end{figure}
+与前面的交互范式一样，思维链也是一种上下文少样本学习方法，只不过现在
+提示中的例子是模型在给出答案前应当采取的{\em 步骤}的几个例子——而此前是事实的例子。这些步骤帮助模型
+沿多步推理链抵达正确答案。这些例子不是用来激活模型某些部分的答案例子，而是关于如何得出答案的步骤例子。少样本与零样本思维链的提示词例子已展示在第~\pageref{fig:cot} 页的图~\ref{fig:cot} 中。 % A zero-shot chain of thought prompt is to add the instruction: {\em Let's think step by step} to the original prompt.
+
+同样，与上下文学习一样，思维链只在规模足够的模型中有效，
+并且随着我们对大语言模型方法的理解加深、以及模型针对思维链微调，这一规模同样在变小。此外，还可以通过蒸馏 \citep{li-etal-2023-symbolic}，把学到的推理方法从大模型迁移到参数少几个数量级的模型。
+
+
+
+
+\subsubsection{D. 自反思运行框架}
+%\subsection{Dynamic (ICRL/ReFT) Agents}
+前述各种智能体交互范式都使用单一的静态
+提示，在许多基准上取得了可喜的成绩。要在规划问题或其他需要追踪状态的问题上表现良好，就需要一种推理
+范式，让提示词被优化，并在可能性树中搜索选项。%, such as in planning problems, further methods had to be developed.
+
+下面讨论两种交互范式，其中大语言模型的提示被一个外部的微型算法动态操纵。这一算法称为{\em 运行框架}。第一种范式是上下文式的（大语言模型参数不变），而第二种范式（下一小节）还使用
+模型微调。
+
+这些交互范式是动态的。
+如我们在前面元学习一章中所见，动态方法的一大挑战是实现稳定的学习过程。
+当训练目标不断变化时，学习算法可能发散，需要格外小心才能收敛。用自反思取得可预测的高性能，仍是活跃的研究领域。
+
+我们讨论的首批动态提示方法
+%are related to in-context reinforcement learning. This agentic interaction style 
+源于
+对更复杂推理结构建模的需求，这种结构超出思维链的直线式步骤序列。首先引入了简单的搜索算法（思维树）。接着引入了成熟的动态提示方法来管理提示词开发（ReAct、reflexion、self refine）。这些方法的运行框架常常引入短期与长期记忆，以在大语言模型多次调用之间记住状态。
+
+这些方法一个有趣的方面是大语言模型
+被用于不同角色，为此会用不同类型的提示词来调用它。大语言模型在思维链
+任务中的原始角色是在每个推理步骤中{\em 评估}答案。如今这个评估提示又增加了
+另一种类型的提示，用于{\em 生成}新的推理步骤。有时还会加入第三种提示，其任务是{\em 改进}提示词本身。这样，单个模型就通过不同提示对自身进行自反思，由外部运行框架管理。
+
+\begin{figure}
+  \begin{center}
+    \input figures/rlD
+    \caption{范式 D：基于大语言模型的自反思；
+      提示词在上下文中依据大语言模型的回答被优化，先生成子问题，再评估子问题；由搜索控制（上图），或由强化学习
+      控制（下图）}\label{fig:rlD} 
+  \end{center}
+\end{figure}
+
+%\todo{Give Example prompts?}
+
+图~\ref{fig:rlD} 展示了这些思想。上方，自反思由标准树搜索算法控制，如思维树 \citep{yao2024tree}。下方，一个强化学习回路控制自反思，策略 $\pi$ 的提示词用（状态、动作、奖励）三元组的历史来更新（另见第~\ref{sec:icrl} 节）。
+ 
+%\todo{Zoiets?}\todo{Willen we dat echt hier, of zijn de voorbeelden elders al gedaan? Zou elders moeten. We gaan toch niet pas in H8 de details van ToT of ReFT geven?}
+
+
+%intro. figure. prompt example. learning style. answer. name and reference of example models.
+%!!!!!!!!!!!!!!!!!!!
+
+\subsubsection{E. 强化微调运行框架}
+到目前为止，所有学习都是上下文式的：模型依据上下文中提供的例子给出回答。大语言模型的参数并未改变。尽管上下文学习易于使用，但它限制了学习。如果我们希望模型更深地适应某个环境，如果我们希望模型记住它在推理时学到的东西，那么参数能够变化会有帮助。我们把使用这种方法的途径称为{\em 强化微调}。RLVR 是一个著名例子。% After a model is pretrained for a certain non-language domain, say, music, then it can be further finetuned from feedback from environment interaction.
+
+图~\ref{fig:rlE} 给出了示意，其中可训练的模型参数记为 $\psi$。注意它与图~\ref{fig:rlD}（下图）的唯一区别是引入了 $\psi$ 参数。在 ReFT 中，大语言模型参数 $\psi$ 会变，它们依据数据集给出的奖励被微调。%Comparing this figure to Figure~\ref{fig:rlD} (bottom), 
+我们应当这样理解这些图：原先推理时的学习是上下文式的，如今这已改变，因为我们允许微调参数 $\psi$。
+%
+在传统大语言模型训练流水线中，微调是推理之前的一个阶段。然而，对许多重要应用（如数学推理或编程）而言，思维链多步推理时展开会产生精确奖励，可用于微调。因此，在强化微调中，模型在推理时产出训练目标，再用于微调同一模型的参数——推理时微调。强化微调模糊了推理与微调的界线，而监督微调则有清晰的训练/推理之分。
+
+%\todo{Is it the same LLM for evaluation and for policy? Or two separate LLMs, with separate parameters? Need to look up ReFT. Should be separate, otherwise the agent is peeking into the environment, which is cheating, violates RL principle of separation of agent and environment}
+%!!!!!!!!!!!!!!!!!!!!!!!
+
+%intro. figure. prompt example. learning style. answer. name and reference of example models.
+%ReFT?
+
+\begin{figure}
+  \begin{center}
+    \input figures/rlE
+    \caption{范式 E：在策略 $\pi$ 参数 $\pi_\theta$ 的强化学习之外，还对大语言模型参数
+      $LLM^\psi$ 进行强化微调
+      \citep{luong2024reft}。}\label{fig:rlE} 
+  \end{center}
+\end{figure}
+
+在大语言模型训练中，有三个主要的训练/推理时刻：（1）预训练，（2）微调，（3）测试（推理）。自反思（范式 D）在推理时做强化学习。
+%First, we pretrain the transformer on a large text natural language corpus, yielding an LLM. Second, we finetune for a certain task---say, zoological question answering---on a part of a task-specific benchmark. Third, we test: we pick an example from the held-out part of the task-specific benchmark and query the LLM with a prompt. This can be a static prompt (style A), or a more advanced style (B, C, D), including ICRL. ICRL would involve repeatedly prompting the LLM with the history of previous answers to try to get an improved answer. 
+%
+在范式 E（强化微调）中，我们不在测试时（3）做强化学习，而在微调时（2）做。%In style D  the LLM with an evaluation prompt provides the feedback to train on, at test time. In style E (ReFT/GRPO/RLVR) the benchmark training split provides the feedback signal to train on, at finetuning time.
+%
+%Traditionally, finetuning is performed with  supervised finetuning. DeepSeek \citep{guo2025deepseek} reports significant efficiency gains  using the  reinforcement finetuning method group relative policy optimization (GRPO)  \citep{shao2024deepseekmath}, which uses inference time Chain of Thought results as finetuning targets. Other popular RLVR methods are   \citep{lambert2024tulu,guo2025deepseek,wen2025reinforcement,yue2025does,luong2024reft}.
+%
+在智能体式大语言模型中，这种交互范式让大语言模型从智能体与世界的交互中学习。
+
+对于动态智能体范式 D 和 E，必须小心以实现稳定收敛。截至目前，很少有工作报告此类结果。
+
+\section{智能体式大语言模型的记忆架构}\label{sec:memory}
+人类（及其他生命形式）会记忆。记忆使我们拥有身份。我们能记住自己的名字、朋友和家人。记忆让我们学会什么对自己好、什么对自己坏，也让我们能调整自己的行为。
+当我们因受伤、疾病或年老而失忆时，我们的人格会改变。严重失忆会导致身份丧失，我们在世界中漫无目的地游荡。
+
+智能体同样需要记忆。本节讨论智能体式大语言模型为何需要记忆，并简要概览为智能体式大语言模型开发的不同记忆类型。
+
+\subsection{记忆的必要性}%\label{sec:memory}
+统计模型 $f(x) \rightarrow \hat{y}$ 依据训练时为输入 $x$ 学到的关系 $f$ 估计输出 $\hat{y}$。这类函数式行为是不记记忆的。任何新信息（训练之后的）都必须通过输入参数 $x$ 提供给模型。大语言模型也不例外，连最早的聊天机器人都配有特殊的隐藏{\em 系统提示词}，把对话历史喂给模型，使其能够进行连贯对话。
+
+随着智能体式大语言模型的用例增多，需要比系统提示词法更高级的技术。
+为更好理解记忆在智能体式大语言模型中的用途，下面讨论记忆的不同用例。
+
+\subsubsection{连贯对话}
+大语言模型的许多机器学习基准属于「挑战/应答」类型，非常适合统计模型的函数式输入/输出行为。然而，大语言模型在现实世界中的主要用例是作为聊天机器人，用户期望它与自己进行有意义的对话。为了维持让对话双方相互回应的连贯对话，聊天机器人必须知道此前说过什么。
+
+因此，对智能体式大语言模型的第一个要求是能够知道对话中此前说过什么。
+
+
+\subsubsection{适应}
+按我们在第~\ref{chap:intro} 章的定义，智能体式大语言模型应当会学习。当机器人在厨房里执行切洋葱之类的任务，而刀具位置变了，它就应该调整动作：现在应该先把刀从新位置拿起，再开始切。智能体与环境交互，如果环境变了，智能体就应该适应。
+
+要么我们智能体的预训练策略必须高度通用，能适应某领域内所有新情况，要么我们的智能体架构必须灵活，能识别某个预训练策略何时需要适应、微调甚至重新训练。为此，它们需要记忆。
+
+如我们在第~\ref{sec:self-reflection} 节所见，自反思式智能体架构所用的外部提示词改进运行框架，需要缓冲区及其他记忆类型来做显式提示词改进。
+
+\subsubsection{身份}
+我们的经历塑造我们的人格与身份。当大语言模型智能体要建立自己的身份时，这些经历要么被收集并保存在记忆中供自反思使用，要么以其他方式加工处理，用来调整它们的行为策略。
+
+随着智能体运行框架的记忆架构改进，智能体将能更好地记住自身经历。到那时，我们可能会发现，我们的智能体能够通过其智能体经历获得独特的人格。
+
+\subsubsection{持续学习}
+传统机器学习在特定数据集上为特定任务训练模型。人类学习不同，我们的学习贯穿一生持续演化。
+在机器学习中，持续学习研究模型如何在一系列新任务上训练，同时保住已学过的任务 \citep{wang2024comprehensive,li2025improving}。与元学习一样，它研究跨相关任务的泛化。持续学习的主要挑战是克服
+灾难性遗忘，以及如何应对数据分布变化。
+
+持续学习领域提供了多种支持此类训练的架构。
+
+
+%\subsection{Types of Memory}
+%\subsubsection{Short Term}
+%\subsubsection{Medium Term}
+%\subsubsection{Long Term}
+
+\subsection{记忆架构}
+智能体式大语言模型领域尚年轻。直到最近，大语言模型智能体的记忆架构才开始受到关注。我们讨论迄今为止出现的不同方法。
+
+\subsubsection{微调}
+应对记忆需求的一个务实办法，是把新信息在到来时就纳入模型。与其开发外部记忆管理算法，不如利用「模型参数就是一种记忆」这一事实，在新例子到来时微调模型。
+
+要在智能体设定中实现这一办法，微调必须快速发生，快到用户无法察觉迟滞。LoRA 这类参数高效微调方法是一个选项 \citep{yang2024low}。尽管这一优雅办法不需要外部算法或记忆结构，但对多数应用而言微调还是不够快，应当开发上下文式或运行框架式的方案。
+
+\subsubsection{长上下文窗口与压缩}
+第二种办法是做提示词管理。聊天机器人的标准做法是，把对话历史的截断形式注入提示词、连同用户文本一起提供给大语言模型。这是一种实践中相当有效的办法。局限在于上下文窗口大小有限，且处理大上下文代价高昂，因为注意力机制有平方级时间复杂度。
+
+人们追求了两类解决方案。第一，开发了专门的长上下文架构，以不同方式跟踪注意力 \citep{smith2022simplified}。这是一个活跃的研究领域，近期方法的综述见 \citet{liu2025comprehensive}。
+第二，开发了压缩方案，把提示词语义压缩成更小的流。综述见 \citet{li2025prompt}。
+提示词可以分成块 \citep{sheng2025dynamic}，以便处理大型提示。一个相关办法是用大语言模型生成代码，递归处理长提示 \citep{zhang2025recursive}。
+
+提示词也可以通过过滤不必要的词元来压缩（这句话可以变成{\em 提示词 压缩 过滤 不必要 词元}）。
+%
+另一个办法是软提示 \citep{lester2021power}。
+%
+%Another approach is called {\em soft prompts}.
+软提示取消离散词元，改为学习嵌入（通过反向传播），可以直接喂进 Transformer，无需映射到真实语言词元。这种上下文可以替代纯文本上下文。已有报告称压缩率从十倍 \citep{mu2023learning} 到百倍 \citep{li2025500xcompressor} 不等。
+
+
+
+
+\subsubsection{显式记忆管理}
+如果需要在大语言模型多次调用之间保存状态，那么直截了当的方案是由智能体运行框架提供这种存储，作为其提示词管理的一部分。在第~\ref{sec:self-reflection} 节我们看到，自反思的外部提示词改进算法如何添加不同类型的存储，如 reflexion 办法和 buffer of thoughts 办法的存储（图~\ref{fig:reflexion2} 与图~\ref{fig:bot}）。
+
+智能体对存储可以有不同要求（综述见 \citet{zhang2025survey,chhikara2025mem0}）。下面讨论这一活跃研究领域的部分新近研究。提示词可以以文本或参数形式存储，相关操作是向记忆读和写。此外，记忆管理操作也很重要，如压缩和遗忘信息。记忆系统还可以提供附加服务。例如，MemoryBank \citep{zhong2024memorybank} 添加层级式摘要，并用大语言模型提示为用户交互事件提供持续的人格画像。
+
+可以把存储和检索条目的操作加进智能体。MemGPT \citep{packer2023memgpt} 研究大语言模型如何用函数调用读写外部记忆（把记忆当作工具）。%The Mem0 paper \citep{chhikara2025mem0} compares different  proprietary and open approaches. 
+A-mem \citep{xu2025mem} 基于邮箱原则引入记忆的上下文描述。
+
+显式记忆管理办法的一个缺点是大语言模型必须显式执行记忆管理，而它从未受过如何有效做此事的训练。另一种方案是手工编写记忆管理代码，在能预见全部可能需求时这是可行的。
+模型上下文协议（MCP）是一套为上下文管理设计的策略。第~\ref{sec:mcp} 节更深入描述该协议。
+
+
+\paragraph{学会使用记忆}
+Mem1 \citep{zhou2025mem1} 用了不同办法：每次大语言模型交互之后，智能体更新一个紧凑状态，供后续大语言模型调用共享。所需记忆大小是常数，因此状态不会耗尽上下文窗口。共享状态的创建方法是在提示中插入推理式标签，并用强化学习训练以激励状态巩固。Mem-$\alpha$ 是另一种用强化学习训练智能体有效使用记忆的办法 \citep{wang2025mem}。
+
+AgeMem \citep{yu2026agentic} 把记忆管理操作集成进智能体策略，做端到端优化。它区分长期与短期记忆，并用三阶段强化学习方案训练智能体使用这两类记忆。
+
+这同样是活跃的研究领域，可以期待新的研究与框架出现。概览见 \citet{zhou2026we}。
+
+%\subsubsection{RAG}
+%Read only
+
+\paragraph{向量数据库}
+除了把提示存为人类可读的文本，我们也可以直接存储它们的词元化嵌入。
+把提示存为文本，在需要精确文本匹配来检索数据时很有用。嵌入编码语义信息——哪些词元在意义上彼此接近。因此，当我们想检索语义相近的条目时，存储嵌入很有用。
+
+嵌入可以存在向量数据库中。传统关系数据库以行和列存数据。向量数据库存储高维数字列表，并提供低延迟访问，因而非常适合大语言模型 \citep{xie2023brief,ma2023comprehensive}。
+
+
+\section{结语}
+智能智能体的概念是人工智能的核心概念。大语言模型显著提升了智能体的交流与推理能力。本章讨论了不同的智能体类型，并把它们与人工智能中的不同传统联系起来。
+
+智能体行动。我们基于前面几章讨论了 5 种主要交互范式。智能体需要记忆才能与环境进行有意义的交互，我们也讨论了这一新的研究领域。
+
+讲了这么多理论之后，该动手实践了。下一章将看一个实际案例研究，以积累使用前述部分理论概念的经验。
+\begin{comment}
+\subsection{Stable Learning}
+We have discussed a progression of   agentic prompting styles that were developed to enhance LLM performance on more and more domains.
+The later styles are increasingly dynamic, and allow the model to be used to reflect, and even change itself, based on the inference time feedback.
+
+These  self-changing interaction styles give rise to a type of learning that is known as metalearning, or algorithms that learn how to learn new tasks. Metalearning is powerful, but the multiple training processes can interact and cause oscillations and become unstable. In this section we will discuss how we can improve the stability of these dynamic, feedback-rich,  metalearning styles.
+
+
+Agents act in the world. Through their actions they change their environment, and the way that the environment responds to actions may change. However, LLMs are fixed at training time, are unaware of a changing environment, and will give the same answer to the same prompt. We could fix this by incorporating changes to the environment in the prompt, through the few-shot examples of in-context learning. In in-context reinforcement learning, the history of $(s,a,r)$ tuples plays the role of providing updated information about the changed environment to the query. A related approach is taken by retrieval augmentation (RAG), where up to date information is inserted into the LLM prompt, so that different parts of the LLM will be accessed to adapt the answer  in the light of an changed  environment. Interaction styles B, C and D can be regarded as a (limited) form of metalearning. 
+
+From the point of view of In-context (reinforcement) learning may use few-shot examples to access the correct parts of the model, but the fact remains that the model is static (modulo some randomization by the model).
+A limitation of these approaches is that the size of the context window is limited. Furthermore, these prompting approaches do not address the fundamental problem that the underlying dataset may slowly get out of sync with the real environment. We need to adapt the model in real time, as it is being used.  Ultimately, a form of finetuning may be needed to incorporate the new information about the changed environment, as is done in style E. 
+Reinforcement finetuning methods, such as GRPO, ReFT, and RLVR allow for such updates. 
+%In context learning , regardless whethat are trained on a static dataset will learn a  static policy of actions. 
+
+%One way to insert new information fix static behavior is use RAG, retrieval augmented generative AI. RAG uses information form other sources, outside the dataset, such as Wikipedia, or corporate databases, that is potentially more up to date than the training dataset. 
+
+
+
+At this point, we have seen many different learning methods, some operating at different levels, with multiple parts of the algorithm trying for adaptation. It is time to have a deeper look at multi-level learning methods. In the following  we will have a look at metalearning.
+%\subsection{State Representation}
+%\subsection{Transition Function}
+%\subsection{Reward Function}
+
+
+%\subsection{Agent: Optimizing Policy}
+
+
+\subsubsection{Metalearning and Few-shot Learning}
+The term metalearning is used for multi-level learning algorithms, that learn to learn, to solve new, unseen, tasks quicker. In ordinary learning, the prediction of the model is governed by its parameters. Most learning algorithms have hyperparameters that govern how the algorithm learns (such as the learning rate, momentum, choice of underlying algorithm, or initialization scheme of the parameters). Base learning learns the parameters of the base model based on the loss function for the examples of a single dataset; metalearning learns the hyperparameters of the learning algorithm using  a meta-loss function over multiple base tasks. Metalearning thus learns to learn, with learning loops at two levels, with the goal to answer new tasks quickly and accurately, based on few examples (few-shot learning). 
+
+%improve not the parameters of a model, but the hyperparameters of the training algorithm of the model, to learn new tasks faster and more accurately. 
+This loopy learning, consisting of a training loop around a training loop, has been studied at some depth in machine learning, and there is useful theory and insights that we should discuss for our agentic setting.
+Metalearning has a long history in AI \citep{schmidhuber1987evolutionary}. More recent surveys are  \citep{hospedales2021meta,huisman2021survey}.
+
+
+
+\subsubsection{Inner-loop Outer-loop}
+The two-layer learn-to-learn concept is often expressed  as an inner training loop being governed by an outer training loop. The inner loop trains over the {\em examples} of a task (loss function), the outer loops trains over the {\em tasks} of a domain (with a meta-loss function). 
+
+As any supervised learning approach, metalearning consists  of  (1) a meta-train phase trainign on a variety of related tassk, and (2) a meta-test phase on a new, unseen, task, to test how well it generalizes to a new {\em task}. The goal is to improve generalization by learning hyperparameter settings that work well on a wide variety of training tasks.
+
+In Metalearning, at meta-training time, here is an inner base loop, the base trainer, that trains the parameters of the model applying the loss function on the examples from training data sets).
+This base training algorithm generally has is town parameters that guide the behavior of the training process, which we call hyperparameters. The base trainers are run on the tasks with a certain setting of the hyperparameters.
+We can wrap an outer learning loop around this inner base training algorithm, to run the base trainers with different hyperparameter settings for each outer-iteration. 
+Then, at meta-test time, all test sets of the tasks are evaluated, and we know if the new set of hyperparameter improves or not. %Thus we can keep improving our hyperparameters. 
+This outer loop algorithm is called the metalearner.
+
+To summarize, (1) the base trainer is run on all tasks (training datasets) with a certain hyperparameter setting, and (2) the tasks are tested on the meta-testset. % (the meta-loss-function over the joint-task testsets). 
+Depending on the outcome of the meta-testing the hyperparameters are adjusted, and the outerloop runs again with the new hyperparameters, to optimize with the meta-loss function.
+
+%\paragraph{Inner and Outer Loop Optimization}
+
+Formally, 
+%This conventional machine learning algorithm is called the \emph{base learner}. 
+each base learner task $\mathcal{T}_i$ approximates a model $\hat{f}_i$ by
+finding the optimal parameters $\theta_i^\star$ to
+minimize the loss function on its data set $D_i$  with examples  
+$$\mathcal{T}_i = \hat{f}_{\theta_i^\star}=\argmin_{\theta_i}\mathcal{L}_{i,\omega}(\theta_i,D_{i,train})$$
+while the learning algorithm is governed by hyperparameters
+$\omega$. %A base task $\mathcal{T}_i$  is a pair of dataset and  
+% hyperparameterized-loss function  $(D_i,\mathcal{L}_\omega)$.   
+
+
+Now, meta-learning is concerned with learning a new task $\mathcal{T}$ from a set of
+base-learning tasks $\{\mathcal{T}_1,\mathcal{T}_2,\mathcal{T}_3,\dots\}$
+so that a new (related) meta-test-task will reach a high accuracy
+quicker. Each  
+base-learning task $\mathcal{T}_i$  has of a dataset
+$D_i$  and a learning 
+objective, the loss function $\mathcal{L}_i$. Thus we get $\mathcal{T}_i=(D_i,
+\mathcal{L}_i)$. Each dataset consists of pairs of input-examples and labels
+$D_i=\{(x_j,y_j)\}$, and is split into a training and a testset $D_i=\{D_{{\mathcal{T}_i},train},D_{{\mathcal{T}_i},test}\}$. On each training dataset a parameterized model
+$\hat{f}_{\theta_i}(D_{i,{train}})$ is approximated, with a loss function
+$\mathcal{L}_i(\theta_i,D_{i,{train}})$.  The model $\hat{f}$ is approximated
+with an algorithm that is governed by a set of hyperparameters
+$\omega$. The particular hyperparameters vary from algorithm to
+algorithm, but frequently encountered hyperparameters are the learning
+rate $\alpha$,  the initial  parameters $\theta_0$, and  algorithm
+constants. 
+
+
+%One of the most popular deep metalearning approaches of the last few  years is optimization-based metalearning~\citep{finn2017model,hospedales2021meta,huisman2021survey}.
+%MAML, which stands for
+%\emph{model-agnostic meta learning}~\cite{finn2017model}.
+%This approach
+% is an optimization-based approach that 
+%optimizes the initial  parameters 
+%$\theta$ of the network for fast learning of new tasks. Most 
+%optimization-based techniques do so 
+%by approaching meta-learning as a two-level optimization problem. 
+%At the \emph{inner} level, a base learner makes task-specific updates to $\theta$ for the different observations in the training set. At the \emph{outer} level, the meta-learner optimizes hyperparameters $\omega$ across a sequence of base tasks where the loss of each task is evaluated using the \emph{test} data from the base tasks $D_{{\mathcal{T}_i},test}$~\cite{ravi2016optimization,hospedales2020meta,lee2018gradient}. 
+
+% In meta learning the base learner is set to perform the \emph{inner}
+% optimization loop. The meta learner optimizes the hyperparameters
+% $\omega$ for a sequence of base tasks. This is called the \emph{outer}
+% loop.
+
+The inner loop optimizes the parameters $\theta$, and the outer loop
+optimizes the hyperparameters $\omega$ to find the best performance on
+the set of base tasks %$i=0, \ldots, M$ 
+with the appropriate test data:
+$$ \omega^\star=\underbrace{\argmin_\omega
+  \mathcal{L}^{\mbox{meta}}}_{\textrm{outer loop}} (\underbrace{\argmin_{\theta_i}
+\mathcal{L}^{\mbox{base}}_\omega (\theta_i,D_{i,train})}_{\textrm{inner loop}},D_{i,test}) .$$
+The inner loop optimizes $\theta_i$ within the datasets $D_i$ of the
+tasks $\mathcal{T}_i$ , and the
+outer loop optimizes $\omega$ across the tasks and datasets.
+
+The meta loss function
+optimizes for the meta objective, which can be accuracy, speed, or
+another goal over the set of base tasks (and datasets). The outcome of the meta
+optimization is a set of optimal hyperparameters $\omega^\star$.
+% This
+% set of optimal hyperparameters
+% may include optimal initial parameters $\theta_0^\star$ for quick learning of new
+% learning tasks,  an optimal learning rate $\alpha^\star$, and other 
+% hyperparameters. 
+
+In optimization-based metalearning  the most important hyperparameters
+$\omega$
+% , such as MAML,
+are the  optimal initial
+parameters $\theta_0^\star$. When the meta-learner   only optimizes  the
+initial parameters as hyperparameters ($\omega=\theta_0$)  then the
+inner/outer formula simplifies as follows:
+$$ \theta_0^\star=\underbrace{\argmin_{\theta_0}
+  \mathcal{L}}_{\textrm{outer loop}} (\underbrace{\argmin_{\theta_i}
+\mathcal{L}
+(\theta_i,D_{i,train})}_{\textrm{inner loop}},D_{i,test}) .$$ In this
+approach we meta-optimize the initial parameters $\theta
+_0$, such that the loss function  performs well on the \emph{test} data of the base
+tasks \citep{finn2017model,huisman2021survey}. 
+
+
+
+
+\subsubsection{Few-shot learning, LLMs, and Metalearning}
+One of the main goals in machine learning is for a model to provide good answers with only a few examples. The aim of metalearning is to learn how to quickly learn new tasks, and thus achieve the goal of few-shot learning. At the start of the base learning procedure, the model parameters are typically initialized randomly, from scratch, with zero knowledge. A common meta learning approach is to initialize the model parameters to earlier learned knowledge, so that they may train faster to a related task. This is a form of transfer learning, that we find in every standard LLM training pipeline, where we first pretrain the model on a large dataset, which implicitly contains many tasks, en then we take the parameters and finetune them further for a specific task. Metalearning is repeated finetuning, and LLM training allows few-shot in-context learning, achieving this major goal of machine learning.
+
+Metalearning is a broadly defined field. The hyperparameters of the algorithm come in many shapes and forms. The method by which  parameter  of the base model are initialized can be regarded as a hyperparameter, but also the the learning rate of the base algorithm, the structure of the network,  the particular type of optimizer function, or other elements of the training algorithm that can be changed, are considered to be a hyperparameter.
+
+The goals of transfer learning and metalearning are the same: to achieve quick learning in new tasks, tasks that are unseen, but in a related domain. The goal of transfer learning and metalearning is  to achieve  few-shot-learning, where a model performs well when it only sees a few examples. 
+
+Large language models are few-shot models \citep{brown2020language}. LLMs perform well on many new tasks, provide that the domain fits (such as question answering, translation, or math problems). The LLM training pipeline is a good example of a metalearning pipeline that works well on many tasks.
+
+\subsubsection{Stable Learning Techniques}
+Thus, the LLM is a model trained by metalearning. In agentic LLM, we go a level higher.
+
+When we use a trained model in our interacting agent with the world, and the agent is also trained using feedback  from this interaction, as it is in agentic styles D and E, then the model can be regarded as the base learner (inner loop) and the interaction with the world can be regarded as the metalearner. 
+
+%\paragraph{ICL}
+In interaction style C, in-context learning is a form of metalearning using a fixed-base-model metalearner. The inner model does not change anymore after pretraining and finetuning are finished. The base learner is run only at the start, and the prompt can be seen as a hyperparameter that guides the metalearner in the inner inference stage. 
+
+In interaction style D, a more fully developed metalearner is in-context reinforcement learning (ICRL), where we encounter an implicit reinforcement learning process. As the history that is accumulated in the prompt   out of the interference gets longer,  the metalearner is achieves increasingly good results. Still, the baselearner has been run only once, before the start of the metalearning process.
+
+%\{ReFT/GRPO/RLVR}
+In interaction style E, when we allow finetuning based on results of the outer loop test-time inferences, then the inner loop is run again and again, and a full metalearning process occurs. Thus, in RLVR, GPRO, and ReFT,  models are finetuned in a metalearning setting.
+
+\paragraph{Slow-moving Target Network}
+When two loops train their model at the same time, and one model acts as a target in the loss-function of the other model, there is a danger of interference: one loop is optimizing on a target that is being moved by the other loop.
+
+In LLM few-shot learning, the inner loop (training the model) occurs before the outer loop (test-time inference in context learning), so there is no danger of interference.
+
+However, in ReFT, GRPO, and RLVR,  the finetuning of the model takes place  results that are produced  using the same model right after a training epoch has occurred. 
+%Furthermore, %A single level baselearning agent uses feedback from the world to optimize its behavior policy. This is a stable learning setup. However,
+An LLM agent that use feedback from the world to also finetune the model in addition to optimizing the behavior policy may end up changing the underlying model to a degree that the foundation under the  policy is shifting.
+%(the loss-targets of the in-context reinforcement learning are moving---optimizing on a moving target is harder than on a static target). 
+Moving target optimization can cause oscillating divergent learning trajectories. 
+Clearly, in interaction style E, care must be taken to prevent model to achieve good trainign performance.
+
+Deep reinforcement learning also suffers from the moving target problem, since the back-propagation targets are changed while the temporal difference error is trying to optimize on them. The field of deep reinforcement learning has introduced many stabilization techniques, such as replay buffers and target networks \citep{mnih2015human,hessel2018rainbow}. These methods typically try to decouple the periodicity of the two learning processes, often by  slowing down one of them. 
+A similar approach is introduced in Hierarchical Reasoning Models (HRM) \citep{wang2025hierarchical}. HRM consists of a two-layer metalearning approach. The learning is stabilized by two different speeds to prevent oscillation.
+
+%Replay buffer
+%Multi-level model with different speeds
+
+%ReAct, BALROG? Thet are not stable, are they two layer systems, or simply single layer on top of static LLM? Pure ICL does not have a problem!
+
+%RLVR potentially wel!
+
+%En hoe zit eht met de five styles????
+%\begin{itemize}
+%    \item[A] instruction, stable (no model change)
+%\item[B] ICL, stable (no model change)
+%\item[C] CoT, stable (no model change)
+%\item[D] ICRL, stable (no model change)
+%\item[E] ReFT/RLVR/GRPO, unstable (prompt and model change)
+%\end{itemize}
+
+
+%agentic interaction is de outer loop die de context beinvloed, of de finetuning. De inner loop is pretraining, of pretraining + finetuning. Dus inderdaad metalearning, dus moet metalearnign worden iutgelegd, met zijn voordelen (krachtig en sneller leren van nieuwe dingen) en nadelen (instabiel moving target als je inner en outer tegelijk doet). Dus kijk uit met je design, wat de reden van deze sectie is.
+
+%Eerst thoerie van metalearning uitleggen, met inner en uiter loop
+
+%Dan metalearnign vertaalt naar test time compute (in context).
+%Hmm, is daar wat te vertellen? Anders dan de prompt veranderd?
+%Hangt er van af hoeveel ik al in H6 vertelt heb over de zelfreflecters. Hier toch meer over convergentie stabiliteit gaan vertellen? Voorbeelden? Grafieken? code?
+%Zijn er stabiele systemen? ReAct? ACE? Kan ik iets aanbevelen?  Is er al iets klaar voor primetime? Een werkend systeem voorbeeld? BALROG met Reflexion? Agent die iets nuttigs doet en interactie met wereld heeft...
+%Met Niki praten?
+
+%En een RLVR trainer op TTT?
+
+%Dat moet ik gaan uitzoeken!
+
+%Dan metalearning vertaalt naar finetuning uitleggen.
+
+%We have seen 5 agentic interaction styles in whcih the agents can interact with the world. All included learning at different levels. In this section we will have a more principled look at methods that learn at different levels: metalearning.
+
+%!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\todo{Re-evaluate/redesign the structure of this section}
+
+%\paragraph{Agentic LLM: Memory based prompt optimization, interaction through Tools}
+%\subsection{DEF MetaLearning: Learning to learn Tasks}
+%Definition:
+%Metalearning learns to learn. Base learning learns good parameter values for a model for a single task, over a set of training examples, so that it will generalize well to a new example. Meta learning learns good hyperparameter values over a range of tasks, so that an algorithm will learn  a new task well and quicker. 
+%The base learner is also known as the inner learning loop, the meta learner is the outer loop.
+
+%We define Metalearning as follows: 
+%\begin{enumerate}
+%    \item {\bf Task-element}: learns over multiple tasks, that are different, to speed up learning a new task. 
+%    \item {\bf Algorithmic-architecture}: both inner loop and outer loop. In the inner loop a base learner learns parameters, on the outer loop the hyperparameters of the base learner are learned by the metalearner.
+%\end{enumerate}
+%A challenge in metalearning is often the stability of the learning process. If the inner loop shows non-linear convergence behavior, the optimization target for the outer loop changes, which may cause hyperparameters of the inner loop baselearner to fluctuate, leading to an overall unstable and unsuccessful learning process. 
+
+%For the purists, for a method to be called {\em metalearning}, it should have both elements. For the pragmatists, it is often enough to learn the lesson that optimizing on a moving target is difficult. Moving targets  require extra attention to the convergence process in any double loop learning system, such as LLM finetuning, in-context learning, and even basic single-loop model-free reinforcement learning that uses function approximation (with the neural network backpropagation becoming the extra loop, as already in DQN). The "extra attention" can be in the form of slowing down changes in hyper parameters, or adding extra buffers or networks to slow down changes of certain (hyper) parameters of the learning process.
+
+%Model-based reinforcement learning consists of two learning loops, one for the dynamics model, and one sampling from that for the policy. Depending on how lenient we are with the definition of hyperparameter, we could regard the policy network parameters as outperloop hyperparameters, and the dynamics model parameters as the baselearning inner loop. Model-based reinforcement learnign certainly has many elements of metalearning, especially when it learns over different tasks, such is in the GATO \citep{reed2022generalist} and Dreamer v3 works \citep{hafner2025mastering}.
+
+%LLMs train their parameters on a task, this is baselearning, although typically over a diverse task. Finetuning parameters on a single new task, also baselearning. The prompts, and the fewshot examples of in-context learning can be considered as hyperparameters, activating different parts of the LLM. External prompt optimizers are certainly outer loop metalearners. Agentic LLMs that use ICRL or Reinforcement finetuning based on chain of thought or other ICL prompts also metalearn the hyperparameters of the agent, although in ReFT also the innerloop parameters are changed. 
+
+%\subsubsection{Metalearning: Inner loop, Outer loop}
+
+%Metalearning is learning hyperparameters. ICL is metalearning. activating previously learned knwoledge. ICL: a model learns to adapt to new tasks by processing examples within its input context during inference. Is everything that adjusts hyperparameters metalearning? ICL is metalearning on a pretrained LLM (prompt is the hyperparameter), ICRL is certainly metalearning (hyperparameter is prompt and RL parameters), ReFT is metalearning not since  LLM is adapted (that is parameters) on World feedback, but because prompt is adapted (that is hyperparameter). All HRL is metalearning where manager level parameters are regarded as hyperparameters. 
+%Agentic LLM is metalearning, since there is an outer RL loop with World feedback that changes the prompt. Agentic LLM is HRL, since inner loop also adapts regular parameters (ReFT).
+%All Styles are metalearning, if we regard the prompt as outerloop hyperparameter, except Style A, since prompt is fixed.
+%Problem of metalearning is stability. Converging on a moving target is harder. Need different convergence rates (top level must slow down).
+
+%We have all experienced how it feels to perform metalearning when we are prompt engineering our LLM.
+
+%Metalearning (learning how to train a system on a moving target) is hard, and can be frustrating. You think you know what will happen if you change the prompt in a certain direction, and then it surprises you.
+%We experience this difficulty directly, since, when prompt engineering, trying to optimize the answer that we get out of our prompt, we change one aspect of the prompt, and performance drops. Metalearning our LLM through prompt engineering is a non-linear unpredictable process. There is non-smoothness where we do not expect it inside the LLM. It often comes down to taking smaller steps, trying to identify linear (predictable) regions where the thing does behave as your mental model is starting to believe.
+
+
+%ReFT is not metalearning because inner LLM parameters are changed. 
+
+
+
+
+
+% Transfer: single copy
+
+% Meta: sequence sub tasks
+
+% def: inner-outer
+
+% meta-goal (meta loss function)
+
+% related: curriculum
+
+% related: classic ml: automl, hyperoptim
+
+
+%\subsubsection{Learning Models and Contexts from agentic interaction; Prompts and World models}
+%\subsubsection{LLM Pretraining/Finetuning is Inner Loop}
+%\paragraph{Inner loop RL: GRPO, RLHF}
+
+%\subsubsection{ICRL is metalearning (outer loop)}
+
+
+
+%\paragraph{Inner loop solves for problem instances of one task}
+%Supervised, RL
+%\paragraph{Outer loop solves for problem tasks of one world}
+%\paragraph{Abstraction as metalearning}
+%\paragraph{Stability of Convergence: DRL can deal with unstable moving targets}
+%Challenge of hierarchical online learning, including metalearning, is stability of convergence, as lower level is moving target for upper level. Stabilization methods reduce dynamics in data sets and replay buffers and target networks, make online learning (RL) more like offline learning (supervised). Dealing with unstable convergence  has been a challenge of metalearning progress.
+
+%\subsubsection{Test Time Compute methods are  Metalearning (ABCD: IC: LLM as environment) as Metalearning}
+%Test Time Compute, Prompt Optimization, Memory-based Self-Reflection as Outer Loop learning
+
+%\paragraph{Learning and Planning, Training and Inference, Planning as Outer Loop/Inference time Learning}
+%\subsubsection{Agentic LLM as Metalearning}
+%\subsubsection{Test Time Scaling}
+
+
+
+%This section was about metalearning and how LLMs can be used to generate actions, using memory scaffolding around them. But, with ICRL,  the environment for RL was the LLM. 
+
+%Test time compute and prompt optimization loops are to improve model outcomes. Not better actions. 
+
+%Now we want the World as environment.
+%LLM acting as agent in the world. Is not the same as ICRL or ICL or metalearning. ICRL is metalearning allright, but it is not an LLM acting in the world.
+
+%Acting in the world.
+%\subsubsection{Test time learning/ICRL (outer loop)} Inference time learning is metalearning
+
+%RL is an online improvement loop, and is well suited for metalearning around and LLM. The prompt contains few-shot examples (the context as states), and an instruction/question, and the LLM answer based on its pretrained knowledge (inner loop). 
+
+%\begin{figure}[t]
+%  \begin{center}
+%    \input figures/rl2
+%    \caption{In Context Reinforcement Learning with an LLM}\label{fig:rl2}
+%  \end{center}
+%\end{figure}
+%Figure~\ref{fig:rl2} illustrates how an LLM can function as the environment for reinforcement learning agent, to learn a policy with an action for each state, online, through interaction with the LLM. 
+
+%Note that in Figure~\ref{fig:rl-org}, the state $s$ was kept in the Environment. If the LLM is our environment, then something must change, since LLMs are purely functional (do not retain state). Now, the state must be explicitly managed, and carried in the function arguments. In Figure~\ref{fig:rl2} the state is kept in the agent, and passed along with the action that is chosen by the policy to the LLM. The LLM then determines the next state and the reward for the prompt that consists of the state (history) and action. The ICRL algorithm is a conventional RL policy improvement algorithm, such as Q-learning or PPO.
+
+%The prompt contains both the history (few shot examples) and the action (instruction/move/question).
+
+
+%\subsubsection{E: FT: Agentic LLM with the World as environment, as Metalearning}
+
+%\subsubsection{Finetuning (ReFT/RLVR: inner/outer loop)}
+%\citep{luong2024reft}
+%\paragraph{Inner/Outer Loop RL: RLFT}
+
+%\subsubsection{Stable Metalearning with Feedback}
+
+
+%\section{Conclusion}
+%In-context does not change the model, but uses it with smart prompts to get the best possible actions out of standard LLMs. It is cheap, and quick. No training of models is performed, and standard models can be used. We can use standard LLMs through APIs.
+
+%Pretraining and finetuning do change model parameters, and one does need to have access to one's own model. It is more expensive, since the model must be trained, but the model can be adapted to the domain, and performance can be higher than only with in-context learning. World models and VLAs have been created that achieve surprising results. 
+
+%Metalearning is a technique to learn on different levels. %Actions from the world 
+%Wat is de inner loop, wat is de outer loop????
+%Wat zijn de taken binnen de outer loop???
+
+\end{comment}
+
+\bibliographystyle{plainnat}
+\bibliography{agenticbook,refs,case,synthetic}

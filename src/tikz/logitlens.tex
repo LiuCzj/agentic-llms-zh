@@ -1,0 +1,80 @@
+\begin{tikzpicture}[
+    node distance=1.2cm and 2cm,
+    layer/.style={rectangle, draw, fill=gray!10, minimum width=3cm, minimum height=0.8cm, font=\small\sffamily, rounded corners=2pt},
+    stream/.style={-{Stealth}, line width=1.5pt, color=gray!60},
+    lens_path/.style={-{Stealth}, line width=1.2pt, color=teal, dashed},
+    box/.style={rectangle, draw, fill=white, font=\scriptsize\sffamily, inner sep=4pt, rounded corners=1pt},
+    lens_box/.style={rectangle, draw=teal!70!purple, fill=teal!5, thick, font=\scriptsize\sffamily, inner sep=5pt, rounded corners=1pt, align=center},
+    prob_plot/.style={thin, fill=teal!60}, % Fixed missing comma here
+    lens_style/.style={circle, draw=teal!80, fill=teal!5, thick, minimum size=0.6cm},
+    handle_style/.style={draw=teal!80, line width=2pt, cap=round}
+]
+
+    % --- Main Transformer Backbone ---
+    \node (input) at (0,0) [font=\small\sffamily] {Input: ``The''};
+    
+    \node (layer1) [layer, above=of input] {Layer 1};
+    \node (layer2) [layer, above=0.8cm of layer1] {Layer 2};
+    \node (dots)   [above=0.4cm of layer2, font=\boldmath] {$\vdots$};
+    \node (layerL) [layer, above=0.4cm of dots] {Layer $L$};
+    \node at ($(layer1.east)+(0.2,-0.2)$) [rotate=90, font=\scriptsize\sffamily\bfseries, color=gray!60, anchor=west] {Residual Stream};
+    
+    % Residual Stream Arrows
+    \draw [stream] (input) -- (layer1);
+    \draw [stream] (layer1) -- (layer2);
+    \draw [stream] (layer2) -- (dots);
+    \draw [stream] (dots) -- (layerL);
+
+    % --- Standard Output Path ---
+    \node (final_ops) [box, above=0.8cm of layerL, align=center] {Layer Norm \\ + $W_U$ + Softmax};
+    \draw [stream] (layerL) -- (final_ops);
+    
+
+    % Final Dist plot (Goal)
+    \node (final_plot) [above=0.5cm of final_ops, minimum width=2cm, minimum height=1cm] {};
+    \begin{scope}[shift={(final_plot.south west)}, xscale=0.5, yscale=0.8]
+        \draw[->, thin] (0,0) -- (4.5,0);
+        \draw[->, thin] (0,0) -- (0,1.2);
+        \foreach \x/\y/\c in {0.5/0.1/gray, 1.5/0.9/magenta, 2.5/0.05/gray, 3.5/0.2/gray} { \draw[fill=\c!50] (\x-0.2,0) rectangle (\x+0.2,\y); }
+         \node at (1.5, 1.1) [font=\scriptsize\sffamily, color=magenta!80] {``cat''};
+    \end{scope}
+    \node [right=0.1cm of final_plot, font=\scriptsize\sffamily, align=left] {Final Model\\Prediction $y$};
+
+
+    % --- Logit Lens Path (Tapping Layer 2) ---
+    \coordinate (tap_point) at ($(layer2.north)!0.5!(dots.south)$);
+    
+    % Custom Drawing of a Magnifying Glass
+    \begin{scope}[shift={($(tap_point)+(1.8,0.5)$)}]
+        % Handle
+        \draw[handle_style] (-0.2,-0.2) -- (0,0);
+        % Rim and Lens (Now a node so we can reference it)
+        \node (glass) [lens_style] at (0.2,0.2) {};
+        % Glossy reflection
+        \draw[white, line width=1pt, cap=round] (0.3,0.3) arc (45:100:0.15);
+        
+        % FIXED: Reference the node 'glass' instead of a coordinate '0.2'
+        \node (lens_text) [right=0.1cm of glass, font=\small\sffamily\bfseries, color=teal!80] {Logit Lens};
+    \end{scope}
+    
+    % Draw path from stream to the glass
+    %\draw[lens_path] ($(tap_point)+(0,0.2)$) -- (glass.west);
+
+    \node (lens_transform) [lens_box, right=2.6cm of tap_point] {Layer Norm \\ + $W_U$ + Softmax};
+
+    \draw[lens_path] (tap_point) -- (lens_transform.west);
+    
+
+    % Lens Dist plot
+    \node (lens_plot) [right=0.5cm of lens_transform, minimum width=2cm, minimum height=1cm] {};
+    \begin{scope}[shift={(lens_plot.south west)}, xscale=0.5, yscale=0.8]
+        \draw[->, thin] (0,0) -- (4.5,0);
+        \draw[->, thin] (0,0) -- (0,1.2);
+        \foreach \x/\y/\c in {0.5/0.4/gray, 1.5/0.7/gray, 2.5/0.8/blue!70!purple, 3.5/0.1/gray} {
+             \draw[fill=\c!50] (\x-0.2,0) rectangle (\x+0.2,\y);
+        }
+         \node at (2.5, 1.0) [font=\scriptsize\sffamily, color=blue!70!purple] {``dog''};
+    \end{scope}
+    \node [below=0.1cm of lens_plot, font=\scriptsize\sffamily, align=center, color=blue!70!purple] {Lens Output $\hat{y}_\ell$};
+
+\end{tikzpicture}

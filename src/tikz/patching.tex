@@ -1,0 +1,46 @@
+\begin{tikzpicture}[
+    node distance=1.2cm and 2.5cm,
+    layer/.style={rectangle, draw, fill=gray!10, minimum width=2.5cm, minimum height=0.7cm, font=\small\sffamily, rounded corners=2pt},
+    stream/.style={-{Stealth}, line width=1.5pt},
+    clean_color/.style={color=green!60!black},
+    corr_color/.style={color=red!60!black},
+    patch_color/.style={color=blue!70, dashed, line width=2pt},
+    box/.style={rectangle, draw, font=\scriptsize\sffamily, inner sep=4pt, rounded corners=1pt, fill=white}
+]
+
+    % --- Clean Run (The Source) ---
+    \node (in_clean) at (0,0) [font=\small\sffamily\bfseries, clean_color] {Clean Input ($x_{clean}$)};
+    \node (l1_clean) [layer, above=of in_clean] {Layer 1};
+    \node (l2_clean) [layer, above=of l1_clean, draw=green!60!black, fill=green!5, thick] {Component $z_{i, \ell}$};
+    \node (l3_clean) [layer, above=of l2_clean] {Layer 3};
+    \node (out_clean) [above=of l3_clean, clean_color, font=\small\sffamily\bfseries] {Correct Output};
+
+    \draw [stream, clean_color] (in_clean) -- (l1_clean);
+    \draw [stream, clean_color] (l1_clean) -- (l2_clean);
+    \draw [stream, clean_color] (l2_clean) -- (l3_clean);
+    \draw [stream, clean_color] (l3_clean) -- (out_clean);
+
+    % --- Corrupted Run (The Target) ---
+    \node (in_corr) at (5,0) [font=\small\sffamily\bfseries, corr_color] {Corrupted Input ($x_{corr}$)};
+    \node (l1_corr) [layer, above=of in_corr] {Layer 1};
+    \node (l2_corr) [layer, above=of l1_corr, dashed, draw=red!60!black] {Ablated/Noisy};
+    \node (l3_corr) [layer, above=of l2_corr] {Layer 3};
+    \node (out_corr) [above=of l3_corr, blue!70!black, font=\small\sffamily\bfseries] {Restored Output?};
+
+    \draw [stream, corr_color] (in_corr) -- (l1_corr);
+    \draw [stream, corr_color] (l1_corr) -- (l2_corr);
+    \draw [stream, corr_color] (l2_corr) -- (l3_corr);
+    \draw [stream, corr_color] (l3_corr) -- (out_corr);
+
+    % --- The Patch (Intervention) ---
+    \draw [patch_color, -{Stealth[scale=1.5]}] (l2_clean.east) to[bend left=20] 
+        node[midway, above, font=\scriptsize\sffamily\bfseries, color=blue!70] {Patch Activation} 
+        (l2_corr.west);
+
+    % Legend/Labels
+    \node [below=0.2cm of l2_clean, font=\tiny\sffamily, color=green!60!black] {Source of Information};
+    \node [below=0.2cm of l2_corr, font=\tiny\sffamily, color=red!60!black] {Target of Intervention};
+    
+    \node at (2.5, 6) [box, align=center, draw=blue!70] {Measure Change in \\ Target Probability};
+
+\end{tikzpicture}

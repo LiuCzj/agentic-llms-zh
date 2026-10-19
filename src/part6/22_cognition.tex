@@ -1,0 +1,379 @@
+%\chapter{Cognitive Perspectives on Agentic LLMs}\label{chap:cognition}
+
+\chapter{*智能体式大语言模型的认知视角}\label{chap:cognition}
+
+
+\begin{learningbox}
+本章你将了解，关于大语言模型与智能体式大语言模型的\emph{认知地位}，目前可以说些什么、不能说什么。具体而言，你将能够：
+\begin{itemize}
+    \item 区分\emph{行为}、\emph{内部表征}与\emph{机制}这三个层级。
+    \item 描述关于大语言模型是否\emph{理解}语言内容的争论。
+    \item 评估支持与反对大语言模型具有\emph{世界模型}与空间表征的证据，并说明这对会规划、会行动的智能体为何重要。
+    \item 解释关于支撑\emph{心理理论}表现的表征已知些什么，以及这与知行差距的关系。
+    \item 描述关于大语言模型\emph{元认知}与\emph{内省}的争论，并说明为何自我报告是弱证据。
+    \item 概述\emph{意识}的科学理论如何被应用于大语言模型，并反思过度归因与归因不足这两种风险。
+    \item 讨论在目前证据稀少的情况下，智能体式扩展（记忆、工具、多模态、行动）在理论上如何影响上述每一个问题。
+\end{itemize}
+\end{learningbox}
+
+\section{从行为到认知}
+在第五部分中，我们见过许多大语言模型与智能体式大语言模型表现与人类相当、或以类人方式行动的例子。例如，模型通过了错误信念测试、复现了人类的总体道德判断，或给出了有共情的回应。但我们也看到，这类行为往往很脆弱（微小的扰动就能把模型带偏），而且模型在文本中\emph{说}的，有时与它作为智能体\emph{做}的严重不一致（知行差距）。有几次我们把自然随之而来的问题搁置了：通过错误信念测试是否意味着模型具有心理理论（第~\ref{sec:theoryofmind} 节）？以共情方式回应的模型是否感受到了什么（第~\ref{sec:empathy} 节）？对智能体式大语言模型来说，反思自己或另一个智能体的行为意味着什么（第~\ref{sec:roletask} 节）？而这些又与人类或其他动物的底层能力如何比较？
+
+本章讨论这些问题，但不在这一有时颇为激烈的争论中选边。我们不再关注模型说了什么或做了什么，而关注其底层表征或过程是否配得上我们用于人类认知的那些名称：理解、思考、世界模型、心理理论、意识，等等。因此，本章背后的这些问题可以追溯到人工智能作为一门学科的早期：Alan Turing 曾提出一个行为测试来回答机器能否思考的问题 \citep{turing1950computing}，而 John Searle 则主张，再多的行为成功也永远不足以了结这场争论 \citep{searle1980minds}。新的一点在于：第一，当前的大语言模型能够通过图灵测试 \citep{jones2025turing, gibney2025turing}，而且正如我们在整个第五部分所见，还能通过与人类高级认知功能相关的一大批其他行为测试。这使得这场争论不再像 Turing 与 Searle 时代那样停留在假设层面。第二，可解释性技术（第~\ref{chap:mi} 章）使我们能够用关于\emph{内部表征}（编码了什么信息）与\emph{机制}（这些信息如何被计算和使用）的证据来补充行为数据，从而为认知研究开辟新机会，增进我们对机器与人类两方面的理解。
+
+在开始之前，需要对若干概念作出澄清：认知主张的证据处于哪个层级、能力与表现之间的区别，以及每项认知技能的分析单元。
+
+\subsection{证据的三个层级}\label{sec:levels}
+对于本章的问题，我们区分可以收集机器认知主张之证据的三个层级：\emph{行为}层（把模型当作黑箱，测试它做了什么）、\emph{表征}层（它的激活编码了什么信息），以及\emph{机制}层（那些信息是否被因果性地使用）。\footnote{请注意，第~\ref{chap:mi} 章定义了四种可解释性范式：行为式、归因式、基于概念的与机制式。前两种范式在本章被合并进行为层，而第三、第四种范式分别对应表征层与机制层。另请注意，Marr 的计算层、算法层与实现层分析 \citep{marr1982vision} 与此处的划分相似但并不相同。}在每一层收集到的证据各有优劣，因此需要一种整合不同层级洞见的做法。作为示例，我们使用第~\ref{sec:theoryofmind} 节的错误信念测试：在 Maxi 不在场时，他的巧克力被从蓝色柜子移到了绿色柜子。
+
+\paragraph{行为层} 在行为层，我们做测试并给答案打分（如同第五部分）。优点包括：这适用于任何系统（包括基座模型与微调变体、开放与闭源大语言模型、智能体式与否），且测试结果原则上可以直接与人类得分比较。主要缺点是：同一个测试答案既可能来自真正的信念追踪，也可能来自记忆（测试题与答案出现在训练数据中）或表层启发式与虚假相关 \citep[相关讨论见][]{hu2025reevaluatingtheorymindevaluation,kouwenhoven2026traces}。扰动测试形式——例如把柜门描述为透明的——可以缩小可选解释的范围，但证据仍是间接的。
+
+\paragraph{表征层} 在表征层，我们问模型编码了什么信息。主要方法是{\em 线性探针}：训练一个小分类器，从某一层的激活预测某个属性（参见第~\ref{chap:mi} 章与 \citet{alain2016understanding, belinkov2022probing}）。这样就能验证某些概念是否存在。在错误信念测试的情形中，我们可以问：能否把 Maxi {\em 认为}巧克力在哪里，与实际巧克力在哪里分开解码出来？如果可以，模型就编码了该测试所依赖的关键区分。这里要提两点告诫，后文会详述：（1）一个足够强大的探针可能自己学会了任务（而不是从模型中解码出来；\citep{hewitt2019designing}）；（2）能从模型中解码出来的信息，未必被模型使用。
+
+\paragraph{机制层} 在机制层，后一项告诫通过观察不同干预对模型行为的影响来处理。例子包括消融、把一次运行的激活修补到另一次运行，或沿探针找到的方向操纵激活（第~\ref{chap:mi} 章）。例如，如果把 Maxi 编码的信念从蓝色改为绿色会使模型回答他会去绿色柜子找，那么该表征很可能{\em 因果性地}参与了模型行为。认知主张的最强证据来自这第三层。然而，正如我们将看到的，此类证据目前在文献中很稀少。一个原因是它需要访问权重，从而把研究大多限制在小模型与窄任务上。\footnote{一个例外是前沿模型的开发者自己做这类研究 \citep[如][]{templeton2024scaling, lindsey2025biology}。这虽有洞见，却带来独立可复现性的问题。}
+
+因此，本章给出的是关于如何实现{\em 构念效度}的更完整图景。当模型行为在扰动下依然稳健，相关变量就在内部被表征。当这些表征随后被因果性地使用，我们就对该能力的存在与有效性有了高度支持。表~\ref{tab:levels} 汇总了本章所讨论（假定的）能力各自的证据。最突出的一点是：行为层的证据在所有地方都占主导。对裸大语言模型而言，表征与机制证据在世界模型上最强，但只限于有限领域（例如棋盘表征）。对智能体式大语言模型而言，表征与机制证据目前大体上完全缺席。
+
+% Requires \usepackage{subcaption} in the preamble (plus booktabs and tabularx, as before).
+\begin{table}
+\tiny
+\begin{subtable}{\textwidth}
+\begin{tabularx}{\linewidth}{@{}p{2.1cm}XXX@{}}
+\toprule
+ & \textbf{行为层} & \textbf{表征层} & \textbf{机制层} \\
+\midrule
+语言理解（第~\ref{sec:understanding} 节） &
+\emph{充分。} 各类基准；扰动与反事实任务变体 \citep{wu2024reasoning} &
+\emph{渐增。} 可从文本中恢复颜色与方向的概念空间 \citep{abdou2021language, patel2022mapping} &
+\emph{稀少。} 窄语言任务的回路 \citep{wang2022interpretability} \\
+\addlinespace
+世界模型（第~\ref{sec:worldmodels} 节） &
+\emph{渐增。} 导航、规划与游戏任务 \citep{momennejad2023cogeval, paglieri2024balrog} &
+\emph{渐增。} 棋盘状态、空间与时间可解码 \citep{li2023emergent, gurnee2024language} &
+\emph{渐增。} 编辑棋盘表征会改变走子 \citep{li2023emergent, nanda2023emergent} \\
+\addlinespace
+心理理论（第~\ref{sec:tomcognition} 节） &
+\emph{充分。} 见第~\ref{sec:theoryofmind} 节 &
+\emph{稀少。} 自我与他人的信念可解码 \citep{zhu2024language, bortoletto2024benchmarking} &
+\emph{稀少。} 操纵信念表征会改变回答 \citep{zhu2024language} \\
+\addlinespace
+自我知识（第~\ref{sec:metacognition} 节） &
+\emph{渐增。} 校准、自我预测 \citep{kadavath2022language, binder2024looking} &
+\emph{稀少。} 真实性方向 \citep{azaria2023internal, burns2023discovering} &
+\emph{稀少。} 概念注入；忠实性测试 \citep{lindsey2025introspection, turpin2023language} \\
+\addlinespace
+意识（第~\ref{sec:consciousness} 节） &
+\emph{稀少。} 自我报告，普遍被视为弱证据 \citep{perez2023towards} &
+\emph{几乎没有。} 尚无公认度量。架构按从意识理论导出的指标属性来评估 \citep{butlin2023consciousness} &
+\emph{稀少。} 消融 J 空间激活，为它在高阶任务中的功能参与提供论据 \citep{gurnee2026verbalize}\\
+\bottomrule
+\end{tabularx}
+\caption{裸大语言模型}\label{tab:levels-bare}
+\end{subtable}
+
+\bigskip
+
+\begin{subtable}{\textwidth}
+\begin{tabularx}{\linewidth}{@{}p{2.1cm}XXX@{}}
+\toprule
+ & \textbf{行为层} & \textbf{表征层} & \textbf{机制层} \\
+\midrule
+语言理解（第~\ref{sec:understanding} 节） &
+\emph{无。} &
+--- &
+--- \\
+\addlinespace
+世界模型（第~\ref{sec:worldmodels} 节） &
+\emph{稀少。} 大语言模型作为规划器内部的模拟器 \citep{hao2023reasoning,gu2024your} &
+--- &
+--- \\
+\addlinespace
+心理理论（第~\ref{sec:tomcognition} 节） &
+\emph{稀少。} 协作博弈中的脚手架（第~\ref{chap:role} 章）；交互过程中未做干预 &
+--- &
+--- \\
+\addlinespace
+自我知识（第~\ref{sec:metacognition} 节） &
+\emph{稀少。} 未经验证的完成报告 \citep{shapira2026agentschaos}；测试与部署的区分检测 \citep{needham2025large} &
+--- &
+--- \\
+\addlinespace
+意识（第~\ref{sec:consciousness} 节） &
+\emph{几乎没有。} 智能体场景中的自我报告与任务偏好 \citep{gray2025agentic} &
+\emph{几乎没有。} 语言智能体架构按全局工作空间理论评估 \citep{goldstein2024case} &
+--- \\
+\bottomrule
+\end{tabularx}
+\caption{智能体式大语言模型（在交互中研究）}\label{tab:levels-agentic}
+\end{subtable}
+
+\caption{本章各主题在行为层、表征层与机制层的证据来源，分别针对（1）裸大语言模型与（2）智能体式大语言模型。表中标出可用工作的多少，并列出若干代表性研究。对智能体式大语言模型而言，写作时可得的证据总体稀少。}\label{tab:levels}
+\end{table}
+ 
+\subsection{能力与表现} \label{sec:competence}
+成功完成单次测试并不能确立某项能力的存在，失败也不能证明其不存在。认知科学区分\emph{能力}（底层禀赋）与\emph{表现}（该能力在特定场合、特定约束下的展现）\citep{chomsky1965aspects}。\citet{firestone2020perf} 主张，人与机器的比较应当尊重这一区分。例如，一个孩子可能因为不理解问题是怎么问的而未能通过错误信念测试。类似地，大语言模型的表现可能取决于提示格式、分词、上下文长度与输出约束等因素。一个无法以某次错误信念测试所要求格式作答的基座模型，仍可能在它对不同补全所赋予的概率中展现出相关能力 \citep{kouwenhoven2026traces}。比较也可能并不对等，例如人类被试获得指导语、练习试次与注意力检查，而模型是零样本受测 \citep{lampinen2024can}。
+
+能力—表现的区分帮助我们避免两种相反的错误。一边是\emph{拟人化}：太轻易地把类人倾向读进模型的输出与行动。正如 CASA 范式的例子所示（第~\ref{sec:politeness} 节），这种倾向在研究者中也根深蒂固。另一边是灵长类学家 Frans de Waal 所称的\emph{拟人否定} \citep{deWaal1999anthropo}，或 \citet{milliere2026anth} 所称的\emph{人类中心偏差}：因为某项能力没有以可辨认的人类方式实现，就漏看或否认它；或者用人类自己也无法达到的标准去要求模型。
+
+% \subsection{LLMs as Models of Human Cognition}
+% Most of this chapter asks whether concepts from research into human cognition apply to AI systems. A growing line of research turns the question around and uses LLMs as models \emph{of} human cognition. An example is \citet{binz2025foundation}'s study that fine-tuned an LLM on trial-by-trial data from 160 psychological experiments. The resulting model, Centaur, predicts the choices of held-out participants better than established domain-specific cognitive models, including when cover stories are changed or the domain is new. Whether this makes it a model of human cognition in the scientific sense, rather than an excellent predictor of human behavior, brings us back to the distinction between behavior-matching and computation-matching: a model that predicts behavior well has not thereby explained it.
+\subsection{分析单元：模型、系统，还是环境？} \label{sec:unit}
+一个反复出现的问题是：什么才算分析单元——裸大语言模型中不具备的能力，一旦加上智能体执行框架、或把模型放入多智能体环境，就可能在\emph{系统}层面涌现。在第~\ref{chap:role} 章我们讨论过一个例子：显式的推理与验证步骤，把 Hanabi 中失败的协作变成了合理的对局。
+
+哲学家与认知科学家就人类提出过类似观点：认知并不是裸大脑里发生的事。于是有了认知的\emph{4E 观点} \citep{noe2009outofourheads, Carney2020foure}：
+\begin{enumerate}
+    \item 具身（Embodied）：认知由整个身体及其感觉运动能力塑造，而不只是脑内的神经活动；
+    \item 嵌入（Embedded）：心理过程置于特定环境之中并受其约束，每个环境都有其物理、社会与文化属性；
+    \item 生成（Enactive）：知觉与思维通过与世界的动态、实时交互而涌现，而非被动的内部计算；
+    \item 延展（Extended）：认知过程延伸到环境中，把笔记本、计算器等外部工具与技术纳入思维本身，作为思维的活跃部分。
+\end{enumerate}
+
+按照认知的\emph{延展}观点，一本被可靠查阅的笔记本可以扮演与生物记忆相同的功能角色，应当算作认知过程与认知系统的一部分 \citep{clark1998extended}。把这一点与本章问题相关的「裸模型 vs 智能体式大语言模型」之别对照：在裸模型中，工作记忆是上下文窗口，长期知识存于权重之中，只能通过（进一步的）训练改变。智能体执行框架则加入类似笔记本的外部存储：过往交互、事实与数据的日志，在相关时被检索。
+
+这一点贯穿全章都很重要，因为不同研究在谈论认知时针对的是不同的分析单元。我们在讨论本章选取的各项认知能力时会顾及这一点：理解语言内容（第~\ref{sec:understanding} 节）、空间（第~\ref{sec:worldmodelscog} 节）与社会（第~\ref{sec:tomcog} 节）环境的世界模型、内省与自我知识（第~\ref{sec:metacognition} 节），以及最后最具推测性的主题——意识（第~\ref{sec:consciousness} 节）。
+
+\section{理解语言内容}\label{sec:understanding}
+第~\ref{chap:behavior} 章表明，大语言模型能解析许多会话含义：例如它们能正确推断，一位只被称赞{\em 总是很准时}的同事，可能并不特别受尊重，因为需要读出言外之意，大意是\emph{关于此人我唯一能想到的优点就是守时}。一个能做出这种推断的模型，是否可以说\emph{理解}了它读到的和写下的东西？在这个问题上，该领域仍然严重分裂。
+
+\subsection{怀疑论论证}
+经典论证见 Searle 的\emph{中文屋}思想实验 \citep{searle1980minds}。一个不懂中文的人坐在房间里，手里有一本操纵中文符号的规则书。问题递进来，按规则操作，流利的答案递出去，而这个人什么也不懂。\footnote{今天我们觉得这一思想实验的表述带有倾向性：把拥有全球 13 亿母语者的中文在 Searle 文中设为\emph{不可理解}，至少暗示了一种强烈的西方偏见，值得反思。}Searle 的结论是：符号操作（句法）不足以产生意义（语义）。\citet{harnard1990symbol} 把它改写为\emph{符号接地问题}：一个只用其他符号来定义符号的系统，就像让一个毫无语言基础的人靠一本汉—汉词典学中文。要在某个时刻获得意义，符号必须连接到语言之外的东西，例如知觉，以及与物理世界或社会世界的交互。
+
+\citet{bender-koller2020climbing} 用他们的\emph{章鱼测试}把这一推理用于大语言模型。两个人分别困在两座岛上，通过一条水下电缆通信。一只超级聪明的章鱼窃听电缆，学会了他们消息中的统计模式，最终冒充其中一人。这种伪装在闲聊中奏效，但当另一位岛民请求帮忙抵御一头熊时就崩了。章鱼从未接触过这些词所指的世界。在作者看来，仅靠语言形式训练的系统无法学到意义，无论它变得多大。本着同样的精神，\citet{bender2021dangers} 把大语言模型描述为\emph{随机鹦鹉}：基于概率模式把语言形式粘在一起，与意义毫无关联。
+
+\subsection{对怀疑论论证的回应}
+对怀疑论论证有三种回应。第一，意义可能首先就不需要指称。\citet{piantadosi2022meaning} 主张一种\emph{概念角色}观点：一个概念的意义主要在于它与其他概念的关系。许多人造概念（{\em 正义}、{\em 素数}、{\em 夸克}）也并不直接植根于知觉，而正是那些赋予此类词以意义的概念间关系，可以从文本中学到。第二，指称可能不需要个体说话者层面的接地。我们可以指称 Peano 或仙女座星系，而无需任何知觉接触，因为我们属于一个语言共同体，这些词在其中有着使用历史。\citet{mandelkern2024language} 主张，在这一共同体的产物上训练的大语言模型，可能以大致相同的方式继承指称。第三，\citet{pavlick2023symbols} 认为这个问题终究是经验性的：大语言模型的表征是否具有接地本应提供的那种结构，应当通过研究这些表征（表~\ref{tab:levels} 的表征列）来判定，而不是仅靠思想实验。
+
+\citet{mitchell2023debate} 总结并综合了这场争论，并指出该领域是分裂的：在 2022 年一项针对 NLP 研究者的调查中，约一半人同意仅用文本训练的模型能够以非平凡的意义理解语言 \citep{michael2022what}。他们认为这个问题可能没有唯一答案，而大语言模型迫使我们去区分不同种类的理解。
+
+\subsection{证据}
+已有多种证据被提出来支持「概念可以仅靠大规模文本学习即可接地」这一观点。另一些结果则支持相反观点。
+
+\paragraph{镜像世界的结构}
+\citet{abdou2021language} 表明，纯文本模型中颜色词表征的几何结构，与人类颜色知觉的几何结构相一致，尽管这些模型从未见过颜色。\citet{patel2022mapping} 向 GPT-3 提供以文本渲染的网格世界中若干方向词（{\em 左}、{\em 北}）的示例。模型能泛化到未见过的词，即便世界被旋转也能做到，但当映射被打乱时就不行。这表明从文本学到的概念结构与接地领域的结构同构。
+
+\paragraph{浅薄的迹象}
+其他结果表明，这种结构可能以不同于人类理解的方式存在。在{\em A 是 B} 上训练的模型，常常无法推断{\em B 是 A}：它们能说出某位名人的父母，却在给出父母时说不出这位名人，这一失败被称为\emph{反转诅咒} \citep{berglund2024reversalcurse}。这一失败涉及存于权重中的知识。当两个事实都出现在上下文窗口中时，模型能毫不费力地反转它们，所以这个诅咒反映的是训练时事实如何被存储，而非无法把握该关系是对称的。\citet{mccoy2024embers} 表明，准确率取决于\emph{答案}作为一段文本有多大可能：当解是一个高概率句子时，GPT-4 有 51\% 的情况能正确解码一段简单代码，而当解是低概率句子时只有 13\%。人类也并非对概率效应免疫，任何在可预测句子中漏看拼写错误的人都明白。但如果任务在稳健意义上被\emph{理解}了，我们不会预期出现这么大的差距。推理模型在这类任务上表现好得多，但它们的准确率与推理长度仍取决于输出的概率 \citep{mccoy2024o1}。类似地，在熟悉任务的反事实变体上（例如九进制算术），性能会急剧下降 \citep{wu2024reasoning}。最后，\citet{mancoridis2025potemkin} 描述了\emph{波将金式理解}——名字取自电影布景村里只有门面、背后并无真实房屋。这类似第五部分所述的知行差距，如今出现在语言内部：已观察到模型能正确给出某个概念（例如 ABAB 押韵格式）的定义，随后却以任何能给出该定义的人都不会采取的方式去应用它。
+
+这些结果合起来，契合形式能力与功能能力之间的区分 \citep{mahowald2023dissociating}：对形式近乎人类的掌握，加上真实但不均衡、且与训练数据统计特性紧密相连的「使用中的理解」。
+
+\subsection{智能体视角}
+章鱼只能接入一条电缆、从中拾取信号。多模态大语言模型接收图像与音频，智能体式大语言模型能够行动与交互。一个编写代码并观察其运行是否失败的智能体，或一个删除文件后再也访问不到它的智能体，会从世界获得关于它如何使用{\em 文件}、{\em 删除}这类词的反馈。这提供了怀疑论者所要求的那种知觉与行动之间的连接，也削弱了章鱼论证的前提。然而，反馈大多以文本形式进入模型的上下文窗口，只有把智能体轨迹用于进一步训练时才会进入其权重。它也没有身体上的利害：模型不会因为自己的行动而「死掉」或「伤到自己」，至少在任何有意义的意义上还不会。至于智能体式嵌入是否真的改变了上述表征，据我们所知尚未被检验。
+
+\subsection{结论}
+\emph{随机鹦鹉}与\emph{完整理解者}都不符合当前证据。纯文本训练产生了镜像世界某些方面的概念结构，但这种结构被运用的方式仍对表层统计敏感。哲学争论部分是关于词语的争论；而关于该结构有多稳健、行动是否能改善它的经验问题，仍悬而未决。
+\section{世界模型与空间认知}\label{sec:worldmodelscog}\label{sec:worldmodels}
+在自然界中，要行动得好，就需要在采取行动之前预测行动的后果。这对在世界中行动的人工智能体同样适用，尤其是在不可逆行动的情形中，例如第~\ref{sec:moral} 节所报告的那些破坏性行动。
+「智能行为依赖一个内部世界模型、以便在行动前试演各种可能」这一想法，可以追溯到心理学作为一门科学的早期：\citet{craik1943nature} 提出，生物出于这一原因会在头脑中携带外部现实的{\em 小尺度模型}。\citet{tolman1948cognitive} 表明老鼠会形成\emph{认知地图}：学会一个迷宫后，它们能走从未走过的捷径。这可以与强化学习相类比——其中的世界模型是关于环境动力学、可用于规划的学习所得模型 \citep{ha2018world}。大语言模型是否具有这样的模型，仍有争议。\citet{lecun2022path} 认为自回归大语言模型原则上缺少它，这也是他为未来生成模型提出另一种架构的原因。过去几年围绕这一主题涌现了大量文献，我们从中评述若干代表性研究，主要聚焦空间认知，给出支持与反对大语言模型中存在世界模型的证据。
+
+\subsection{支持证据}
+最著名的案例是 Othello-GPT \citep{li2023emergent}，见图~\ref{fig:othello}。一个小型 Transformer 只被训练来预测黑白棋（Othello）走子序列中的合法走法。模型从未被告知规则，也从未见过棋盘。然而探针能从其激活中恢复完整棋盘状态，而当作者编辑这个内部棋盘时，模型预测的是对编辑后棋盘合法、而非对真实棋盘合法的走法。不过该研究中的探针是非线性的，因此第~\ref{sec:levels} 节的第一条告诫适用：也许是探针算出了棋盘，而不是模型。\citet{nanda2023emergent} 解决了这个问题。棋盘状态被发现是可线性解码的，并可沿线性方向编辑且对走子有同样效果——但只有当格子被编码为{\em 我的}或{\em 你的}、而非黑或白时才成立。有了这一限定，该案例在三个层级上都提供了证据。一个更普遍的教训是：模型的变量未必是我们预期的那些。
+
+\begin{figure}
+\centering
+\newcommand{\cogminiboard}[3]{% origin, list x/y/color, highlighted square x/y (or none)
+\begin{scope}[shift={#1}]
+\fill[black!8] (0,0) rectangle (1.2,1.2);
+\draw[step=0.3, black!55] (0,0) grid (1.2,1.2);
+\foreach \x/\y/\c in {#2} \filldraw[fill=\c, draw=black] (\x*0.3+0.15,\y*0.3+0.15) circle (0.1);
+#3
+\end{scope}}
+\begin{tikzpicture}[font=\small,
+box/.style={draw, rounded corners=2pt, align=center, text width=2.15cm, minimum height=1.05cm, inner sep=3pt},
+lvl/.style={font=\footnotesize\itshape, text=black!65, align=center}]
+% top row: the model
+\node[box] (seq) at (0,0) {走子序列 \texttt{\scriptsize F5 D6 C3 \dots}};
+\node[box] (low) at (3.0,0) {Transformer 层 $1\dots\ell$};
+\node[box] (high) at (6.4,0) {Transformer 层 $\ell{+}1\dots L$};
+\node[box] (out) at (9.4,0) {预测的合法走法};
+\draw[-latex] (seq) -- (low);
+\draw[-latex] (low) -- node[above, font=\footnotesize] {$h_\ell$} (high);
+\draw[-latex] (high) -- (out);
+\node[lvl] at (9.4,-1.0) {(1) 行为层};
+% bottom row: probe and intervention
+\cogminiboard{(2.6,-4.2)}{1/1/black, 2/2/black, 1/2/white, 2/1/white, 2/3/black}{}
+\cogminiboard{(5.6,-4.2)}{1/1/black, 2/2/black, 1/2/white, 2/1/white, 2/3/white}{\draw[red!70!black, very thick] (0.6,0.9) rectangle (0.9,1.2);}
+\node[font=\footnotesize] at (3.2,-4.5) {解码出的棋盘};
+\node[font=\footnotesize] at (6.2,-4.5) {编辑后的棋盘};
+\draw[-latex] (4.5,0) -- node[left=3pt, lvl, pos=0.55] {(2) 表征层：探针} (3.2,-2.9);
+\draw[-latex] (3.95,-3.6) -- node[above, font=\footnotesize] {编辑} (5.45,-3.6);
+\draw[-latex] (6.2,-2.9) -- node[right=3pt, lvl, pos=0.45] {(3) 机制层：修补编辑后的 $h_\ell$} (4.9,0);
+\end{tikzpicture}
+\caption{Othello-GPT 实验示意图 \citep{li2023emergent, nanda2023emergent}，它在第~\ref{sec:levels} 节的全部三个层级上都提供了证据。（1）仅用走子序列训练的模型预测合法走法。（2）探针从中间层的激活 $h_\ell$ 解码棋盘状态。（3）当解码出的棋盘被编辑（此处翻转一枚棋子）、并相应改变激活后，模型预测对编辑后棋盘合法的走法。为便于阅读，棋盘画作 $4\times4$；真实棋盘为 $8\times8$。}\label{fig:othello}
+\end{figure}
+
+在游戏棋盘这一特定语境之外，\citet{gurnee2024language} 在 Llama-2 中发现了空间与时间的线性表征：城市与地标的坐标、历史人物与事件的日期，都可以在不同提示下稳健地从激活中解码。
+
+关于提前规划，有证据表明生产模型 Claude 3.5 Haiku 的归因图分析（第~\ref{chap:mi} 章）中存在 Craik 所说的\emph{行动前试演各种可能}的有限形式 \citep{lindsey2025biology}。在写一副押韵对句时，模型在写出第二行之前，就已经在第一行末尾激活了候选韵词的特征。抑制计划中的词、或注入另一个词，会改变第二行。因此，模型提前表征了一个目标状态，并用它塑造中间产生的内容。这种跨单行的规划，为反驳「下一 token 预测器只能看一步」的观点提供了证据。这在空间规划的语境中也可能相关，但未来工作必须确定模型实际在多大程度上这样做。
+
+\subsection{反对证据}
+其他研究指出了大语言模型表征能力的局限。CogEval 是一套受认知科学启发、用于系统评估大语言模型认知能力的协议，它测试模型的路径、捷径与绕行能力 \citep{momennejad2023cogmap}。当时的前沿模型（包括 GPT-4）系统性地失败：它们虚构路线选项，并陷入循环。在 EWoK 上——一个用最小对立对测试基本物理与社会世界知识的基准——大语言模型仍低于人类表现 \citep{ivanova2025elementsworldknowledgeewok}。\citet{yamada2024spatial} 表明，准确率随所需导航的结构类型而强烈变化。当网格、六边形与三角形网格、环或树以文本描述、且模型需要在其上导航时，大语言模型似乎能很好地把握某些空间方面，却在另一些方面失败。加入视觉似乎也帮不上忙：视觉语言模型（VLM）在{\em 在……左边}、{\em 在……下面}这类基本关系上都很吃力 \citep{kamath2023whats}，这与视觉通道对心理理论帮助有限相一致（第~\ref{sec:theoryofmind} 节）。一项近期的大规模研究表明，视觉语言模型已被记载的许多问题至今依然存在 \citep{wang2026monos}。
+
+在曼哈顿出租车行程上训练的生成模型，能在任何路线上几乎完美地预测下一个转弯。然而当引入完全有效但不太可能的绕行时，性能就崩塌了。当研究者根据其预测重建街道地图时，地图上满是走不通的街道与立交桥 \citep{vafa2024eval}。这表明下一 token 预测的准确率可能高估了模型世界模型的实际连贯程度。在一项后续研究中，\citet{vafa2025foundation} 表明，在行星轨道上训练的模型能准确预测轨迹，但它们提取出的隐含力学定律并不像牛顿定律那样能很好地泛化到新的物理任务。类似地，\citet{nikankin2025arith} 表明大语言模型做算术靠的是{\em 一袋启发式}，而不是算法与定律。他们找到了许多局部表征存在的证据，每一个只处理一种狭窄的数值模式。
+
+% \paragraph{Using LLMs as World Models}
+% Several frameworks use the LLM explicitly as a world model. In RAP \citep{hao2023reasoning}, the LLM predicts the next state for each candidate action inside a tree search (Section~\ref{sec:planning}), and web agents improve when they first simulate, in natural language, what a click will lead to \citep{gu2024webdreamer}. These approaches work to the extent that the required world knowledge is of the commonsense, textual kind.
+
+% dit komt uit zoeken op agents + world model maar gaat eigenlijk niet over hebben van maar over gebruik als, ik twijfel of het daarmee in dit advanced chapter hoort dus die lijn even gepauzeerd
+% probleem is dat agentic als toevoeging op/verlengde van besproken evidentie voor/tegen echt lastig te vinden is, had ik niet verwacht
+
+\subsection{智能体视角}
+系统层面的视角提示了一条前进路径。智能体不必把世界模型完全装在激活里：它可以维护一张显式地图、一个笔记文件，或一个模拟环境的程序，并在需要时查阅。当空间状态必须在长时程上被追踪时，智能体就会吃力，正如你在案例研究 2 的 BALROG 中玩 NetHack 时所体验到的。
+
+于是世界模型成了系统的属性，而非模型的属性，并且是可检查的。一个互补的发展是利用从视频中学到的世界模型，生成可供智能体在其中训练的交互式环境 \citep{bruce2024genie}。这与第~\ref{sec:openworld} 节的开放世界环境相衔接。
+
+\subsection{结论}
+Othello-GPT 与曼哈顿的结果怎么可能同时成立？一个重要的关键在于训练数据的覆盖范围。在 \citet{vafa2024eval} 的研究中，一个在\emph{随机}生成的棋局上训练的 Othello 模型通过了连贯性测试，而在人类冠军棋局上训练的模型则没有。随机对局很可能覆盖状态空间的所有角落，而人类对局——如同合理的出租车路线——只覆盖其中一小部分。模型恢复世界结构的程度，取决于它的数据在多大程度上迫使它这么做。
+% Cool thought: human text is of the second type, it describes the world only as far as people found it worth describing. Enter Yann Lecun. Enter Richard Sutton.
+
+区分弱意义与强意义会有帮助。在弱意义上，如果世界的状态能从模型激活中解码出来，模型就有世界模型。在强意义上，模型还必须\emph{连贯}（是一个一致的模型，而非许多局部碎片）、\emph{被因果性地使用}，并支持对新情境的泛化。
+
+证据主要表明，大语言模型在弱意义上具有世界模型。取决于某一领域数据的密度，它们可以恢复出连贯的世界模型，从而达到强意义：在足够的随机 Othello 棋局上训练的模型就是一个例子。在反映人类如何行动、如何书写世界的数据上训练的模型，只覆盖人们觉得值得描述的部分，最终得到的东西更像一堆部分不一致的草图，而不是一张完整地图。从物理模拟中提取的规律同样如此：它们足以做局部预测，却不能很好地泛化到其他语境。
+\section{社会认知与心理理论}\label{sec:tomcognition}\label{sec:tomcog}
+正如我们在第~\ref{sec:theoryofmind} 节所见，前沿大语言模型在许多心理理论（ToM）测试上与人类表现相当。然而这种表现在测试形式的简单扰动下很脆弱，而且用语言预测他人的心理状态（字面 ToM）并不总能转化为与预测相一致的行为（功能 ToM）。至于这是否意味着大语言模型可以说\emph{具有} ToM、以及这是否会是\emph{任何人类意义上的} ToM，这些问题被搁置了，这里接着讨论。
+
+\subsection{表征层与机制层的信念}
+\citet{zhu2024language} 向两个相对较小的模型（Mistral-7B 与 DeepSeek-7B）呈现错误信念故事，并在注意力头的激活上训练线性探针。探针能分别解码主人公的信念与全知读者所知的世界状态，这意味着模型把两种视角区分开来。应用到 Maxi 故事上，这意味着 Maxi 的信念是巧克力仍在蓝色柜子里，而全知读者的信念则在 Maxi 不在场时巧克力被移动后更新为绿色柜子。我们曾在第~\ref{sec:empathy} 节就共情讨论过的自我—他人区分，似乎因此在受测模型中得到了表征：它们能领会别人（主人公）持有一个与自己（作为测试的全知读者）不同的信念。
+
+在他们的实验中，沿探针方向操纵激活会改变 ToM 任务上的表现。这在探针训练任务之外的其他任务上也出现，表明被表征的信念对行为具有因果重要性。换言之，不仅有表征层的证据，也有机制层的证据。
+
+\citet{bortoletto2024benchmarking} 把这条研究路线扩展到若干模型家族与规模。他们进一步发现，信念表征的质量与可靠性随模型规模和指令微调而提升。他们还表明，行为层观察到的脆弱性延伸到了表征层：全知视角的表征相当稳定，而他人信念的表征对提示变化很敏感，甚至对那些本不该有影响的变化也敏感。
+
+\subsection{人类与机器通往相似行为的不同路径}
+儿童在 3 至 7 岁之间发展出 ToM。这部分基于共情他人的先天倾向，部分通过从环境中学习。他们的 ToM 发展还得益于共同注意、假装游戏、关于他人想要什么和想什么的针对性对话，以及其他具身的、交互的经验 \citep{apperly2011mindreaders}。语言输入在这一发展中也起着重要作用。研究已证明 ToM 发展与认知动词的习得 \citep{milligan2007language}、对否定的掌握 \citep{devilliers2014role} 以及句子补足语结构 \citep{lohmann2003role} 之间存在关联。大量研究传统表明，尤其是叙事能力——讲述与理解故事的能力——为儿童、青少年与成人的 ToM 技能发展提供脚手架 \citep[e.g.]{hutto2008folk, vanduijn2016, nicolopoulou2017narrativity}。大语言模型解决 ToM 任务的能力几乎完全基于语言输入而获得。\footnote{后训练在 ToM 发展中的作用大体上不清楚，尽管有迹象表明监督微调能提升 ToM 表现 \citep{kouwenhoven2026traces}。}它们缺少在真实社会环境中的交互性嵌入，这一点由规模来补偿：大语言模型需要多出若干个数量级的语言输入，ToM 能力才开始涌现 \citep{trott2023do, kouwenhoven2026traces}。这提示：儿童与大语言模型产生相似的测试分数，并不支持「其底层计算相似」这一主张 \citep{hu2025reevaluatingtheorymindevaluation}。
+
+还应补充一点：关于\emph{人类}如何加工 ToM 任务的争论本身也未定。按照（1）\emph{理论论}，我们对他人应用民间心理学的理论 \citep{gopnik1992child}。按照（2）\emph{模拟论}，我们以自身的心与身为模型：想象自己处在他人情境中以推断其感受与想法 \citep{goldman2006simulating}。双系统（3）论者主张两者都需要：模拟用于快速自动的推断，辅以理论论用于更慢、更深思的社会推理 \citep{apperly2009humans}。
+
+这三种观点中是否有哪一种有助于描述大语言模型中的 ToM 加工，尚不清楚。鉴于模拟预设了一个身体以及属于自己的心理与情感生活，很难想象它在大语言模型中会是什么样。另一方面，看第~\ref{sec:consciousness} 节讨论的角色扮演解释，\emph{作为一个角色}生成文本恰恰是大语言模型似乎经常做的。这与模拟有一处平行：人类采取某个视角，产出处于那个位置的人可能会说的话。而民间心理学理论则可以基于大语言模型训练数据中大量存在的文本来源。人类文本包含丰富的心智状态语言。以儿童故事为例。《小红帽》的精髓就围绕着一个错误信念情节：她\emph{不知道}狼吃掉了外婆并躺到了床上。小红帽\emph{纳闷}外婆的耳朵为什么这么大，如此等等。某种意义上，这类童话，以及小说、电影剧本和其他虚构体裁，都可以被视为大语言模型的大型 ToM 训练集。从这些体裁中蒸馏出的抽象很可能在大语言模型执行 ToM 任务的能力中起主要作用，但其确切机制尚待厘清。
+
+总之，关于 ToM 是由理论驱动还是由模拟驱动，这一争论在人类身上尚未解决；而这一区分如何适用于大语言模型，就更不清楚了。
+
+\subsection{重访字面—功能差距}
+在第五部分中，我们为字面 ToM 与功能 ToM 之间的差距、即知与行之间的差距，识别出三种候选解释：（1）能力缺失，（2）能力存在但未被自发调用，或（3）表征存在但未与动作选择相连。解释（2）似乎得到脚手架方法成功的支持，例如社会思维链 \citep{akata2025playing}。这与上文讨论的探针结果一致——它们表明相关信念表征确实存在于模型中，但对（3）即这些表征在行动中的实际调用，尚未说明什么。
+
+一种可能的解释是：只有当上下文\emph{看起来像} ToM 问题时，大语言模型才会调用相关知识。如果这一点保持隐式，相关表征就不会被用于动作选择，除非问题被显式提出（正如社会思维链所做的）。这一解释得到实验支持：改变 ToM 场景可能触发错误的产出——例如，如果上下文看起来像经典错误信念场景、但实际上是直截了当的\emph{真信念}情形，模型仍可能倾向于套用错误信念推理 \citep{ullman2023large, kouwenhoven2026traces}。请注意，人类也觉得知与行的区分很难。一个人可能知道国际象棋规则，但真正在头脑中应用它们、推演几步棋，需要相当的心智努力，只有少数人能掌握。Kahneman 的系统 2 思维对人类而言需要高度集中的努力 \citep{kahneman2011thinking}。请注意，外部工具会有帮助：人类可能用一张纸记录棋盘状态；同样，大语言模型也可以通过执行框架在外部追踪状态，正如我们在第二、第三部分所见。
+
+对智能体式大语言模型而言，决定性的实验应在机制层对表征的信念施加因果干预，且干预要发生在诸如 Hanabi 这类游戏的交互\emph{过程中}——那里的语境要求进行 ToM 推理，却并未显式提出 ToM 问题。据我们所知，这尚未有人做过，如表~\ref{tab:levels} 中 ToM 一行的智能体单元格为空所示。
+
+\subsection{解读大语言模型的心智}
+反过来，人类也把他们的 ToM 用于大语言模型。一项研究表明，在一个具有代表性的美国样本中，多数被试给 ChatGPT 赋予了某种程度的意识与民间心理学体验 \citep{colombatto2024folk}。这种归因与使用频率正相关。这契合前文讨论的 CASA 范式（第~\ref{sec:politeness} 节），我们将在第~\ref{sec:consciousness} 节回到这一点。
+
+\subsection{结论}
+就当前证据而言，大语言模型的 ToM 在静态测试上与人类行为与表现相当。关于这种相当是否延伸到表征层与机制层，证据有限。大语言模型把信念表征为不同于现实的东西，而这些表征可以因果性地参与回答 ToM 问题。与人类相比，信念表征的获得与应用方式既有平行也有差异。表征与行动规划之间的联系很脆弱，且往往依赖显式激活。进一步限制这场人—机平行性讨论的是：关于人类 ToM 的获得与加工本身的争论尚未解决。
+\section{元认知、内省与自我知识} \label{sec:metacognition}
+到此为止，我们问的是大语言模型对语言、世界与他人心智表征了什么。现在我们问：它们对自身内部运作表征了什么。这对智能体式大语言模型尤为重要。要执行一个多步任务，智能体必须知道例如自己不知道什么、何时该核实某条信息、一项任务大概需要多少努力，以及任务何时真正完成。这类问题传统上归在\emph{元认知}概念之下。
+
+在心理学中，元认知通常被理解为\emph{监控}与\emph{控制}之间的循环 \citep{nelson1990meta}：系统评估自身认知过程的某个方面，例如其不确定性或在某个子任务上的进展，并利用这一评估来调节下一步做什么——例如切换策略、检查中间结果、请求帮助，或停止。\citet{liu2026metacog} 采用这一经典循环作为一篇大语言模型元认知综述的概念框架。这一区分与本节相关，因为循环两半的证据强度并不相同：模型可能表征了关于自己答案质量的信息，却不能可靠地据此行动——这又是知行差距的一例（第~\ref{sec:tomreasoning} 节）。
+
+一点术语说明：在大语言模型文献中，\emph{元认知}一词被用于范围很广的语境，与心理学概念只有松散对应，从校准的置信度分数到对给定输出的语言化反思。因此对下面每项发现，我们都会问：究竟监控的是什么、我们怎么知道，以及结果是否被用于控制后续的生成步骤或行动。
+
+\subsection{监控：知道自己知道什么}
+应当区分置信判断的两种性质。元认知\emph{校准}问的是置信是否与准确率匹配：以 80\% 置信给出的答案，是否也有 80\% 的时候是正确的？元认知\emph{敏感度}问的是置信能否区分正确与错误的答案：模型在答对时是否比答错时更有信心？心理学家使用源自信号检测论的指标，例如 meta-$d'$ 与比值 meta-$d'/d'$（M 比值），来表达相对于任务表现的元认知敏感度 \citep{maniscalco2012signal}。这些指标现在也被用于大语言模型。
+
+早在 2022 年，\citet{kadavath2022language} 就表明大语言模型能相当准确地评估自己知道什么、不知道什么。当被问及各类多项选择题时，模型能给出校准良好的分数。模型也能相当好地评估自己答案的正确性，并且可以被训练成在给出选项之前就预测自己是否知道某问题的答案。
+
+此后若干研究复现并扩展了这些发现。不过有三点告诫。跨研究的混合结果表明，元认知敏感度依赖任务与领域 \citep{liu2026metacog}。第一，元认知校准与敏感度随任务、领域与模型而变化 \citep{liu2026metacog}。第二，用人类反馈做后训练降低了 GPT-4 答案概率的校准 \citep{openai2024gpt4}，这可能是因为此类训练所用的奖励模型倾向于偏好自信的回答 \citep{leng2025taming}。反过来，后训练也可能有正面效果 \citep{lindsey2025introspection}。第三，结果取决于置信是如何被引出的：语言化的置信估计、自我报告的数字（例如要求给出 0–100 的置信分），以及从 token 概率导出的置信，并不测量同一件事 \citep{liu2026metacog}。当模型被要求用语言表达置信时，它们大多过度自信 \citep{xiong2024can}。
+
+\subsection{内省}
+人类是否对自身内部状态拥有特权通道，这个问题同样适用于大语言模型：它们是否拥有一种外部观察者（面对同样的行为数据）所没有的通道？\citet{binder2024looking} 微调一个模型，使其预测自己在假设情境中的行为。它做这件事的准确率高于第二个模型——后者是在第一个模型的行为数据上训练的。这表明第一个模型能获取仅靠行为无法获得的内部信息。相反，当模型关于自身语言知识（例如某句子是否合乎语法）的语言化判断，与它实际赋予句子的概率相比较时，这些判断并不比别的模型的概率更好地追踪模型自己的概率 \citep{song2025languagemodelsfailintrospect}。
+
+\citet{lindsey2025introspection} 通过\emph{概念注入}对内省做了因果检验。把一段对应于例如「全大写书写」的激活模式，加到一个简单查询的模型激活上。当模型被问是否注意到任何异常时，至少在某些试次中它能合理地把注入的概念语言化。就全大写而言，它能指出自己注意到一个「过于强烈、音量很高的概念」。
+
+研究者还问过，推理轨迹能否被视为反映内部状态的自我报告。\citet{turpin2023language} 证明，当提示中的多项选择题示例总把正确答案放在第一位时，模型会跟随这一偏差。当被要求解释时，它们通常用合理化来为自己的选择找理由，而不是把这一偏差讲明白。这与 \citet{chen2025reasoningmodelsdontsay} 的发现一致：当答案的暗示被植入提示时，模型会使用它们，但只在少数推理轨迹中承认这一点。应当指出，人类也做类似的事。在经典实验中，被试自信地为自己选择给出的理由，可证明并不是那些选择的成因 \citep{nisbett1977telling}。
+
+总体而言，表明模型对自身内部状态拥有特权通道的结果是混合的。如果这种能力存在，它也是狭窄的、不可靠的，且依赖实验设置。
+
+\subsection{智能体视角}
+\citet{shapira2026agentschaos} 的智能体把任务报告为已完成，而系统状态显示并非如此。这可以看作自我监控的失败：关于自身状态的断言从未与世界核对。对人类而言，许多这类核实在工作与其他日常场景中已成习惯；但对智能体而言，它们必须被设计成每一步行动之后的验证步骤、测试或状态检查。智能体架构正是这么做的，例如用独立的监控器检测深度搜索智能体的检索结果与推理何时开始不一致，并触发纠正动作 \citep{sun2026deepsearch}。与世界模型一样，元认知可能作为整个系统的层面涌现，而非在单个模型内部。
+
+\subsection{结论}
+大语言模型的元认知、内省与自我知识是可检测到的，但在多方面受限。在监控一侧，模型的语言表达、内部概率与激活，对其答案可靠性的信息量各不相同。关于特权内省通道的证据是混合的，最多指向有限的通道。在控制一侧，证据更加稀薄：监控信号常常未被用于调节行为。这就为智能体式设置留下了空间——它们可以设计出在功能上等价于人类借助元认知控制所达成行为的表现。
+\section{意识}\label{sec:consciousness}
+机器能有意识吗？这个问题已存在很久，过去属于推测、思想实验与科幻的领域。然而今天，我们看到意识研究领域的顶尖科学家与哲学家在讨论大语言模型与智能体式大语言模型时谈论这个问题。本节概述可以如何接近这个问题，以及它为何仍然开放。
+
+\subsection{定义}
+是什么把意识与更宽泛的智能标签区分开来？在其经典论文《成为一只蝙蝠是什么感觉？》中，\citet{nagel1974bat} 提出，如果一个系统存在「成为那个系统是什么样的」感觉，它就是\emph{现象意识}的。这把意识定位为一种要从\emph{内部}去体验的属性，并使其按定义难以从外部视角进入。\citet{block1995confusion} 提出了与\emph{通达意识}的区分，后者被定义为信息（来自感官、记忆与其他官能）可用于推理、反思与行动控制。意识的这两个子类型都应与\emph{感受性}（sentience）区分开来，后者指带有效价的体验，例如愉悦、痛苦与欲望。功能能力——如空间定向、心理理论与元认知（上文已讨论）——原则上可以在没有感受性或意识的情况下存在。反过来，多数动物至少在上面提到的后两项功能能力上得分很低，但它们很可能是有感受性的。
+
+从我们作为人类观察者与大语言模型使用者的角度看，我们常随口使用\emph{「系统想要……」}或\emph{「智能体决定……」}这类说法。重要的是区分这类归因的语用用法，与对这类心理状态本体论地位作出承诺 \citep{van-dijk-etal-2023-large}。\citet{dennett1987intentional} 在其\emph{意向立场}中也作了区分：这是一种做法，对任何其行为能被如此良好预测的系统赋予信念、欲望与其他心理状态。说一个恒温器\emph{一旦发现房间太冷就会开启暖气}，为该系统的运作提供了一个可用的模型，而无需任何关于其具有类似我们内部生活的证据。有人认为\emph{「大语言模型理解……」}或\emph{「这个智能体想要……」}这类说法不过如此；也有人认为，在大语言模型的情形中，这类说法有其值得探究的深度。
+
+\subsection{功能主义与理论驱动的评估}
+与我们在第五部分及上文所讨论的一致，\citet{butlin2023consciousness} 主张，仅凭行为是理解大语言模型内部运作的糟糕指南。因此他们建议从主流的意识科学理论出发，从中导出\emph{指标属性}，再用这些属性去对照当前的人工智能架构与系统性质。他们的论述建立在\emph{计算功能主义}的前提上：执行正确类型的计算，对意识而言既是必要的也是充分的。要紧的是系统的功能组织（它表征什么信息、如何变换这些信息、其组件如何交互），而不是实现这些处理的物质基质。
+
+在这一观点下，意识是\emph{基质无关}的，这常用如下思想实验来说明。假设你有一处只影响一个或几个神经元的脑损伤，而微观医学的进步使得用硅基对应物替换受损神经元成为可能，且这些硅基对应物完成与生物学前任完全相同的功能。你的脑功能在功能上完全等价。你会说自己不再有意识了吗？如果后续损伤后更多神经元被替换，直到你四分之一个脑子都是硅基神经元等价物呢？或者一半、四分之三？遵循 \citet{searle1980minds}，这一观点在生物主义观点中仍有争议，后者认为意识依赖活体神经组织的特定属性（见下文第~\ref{againstfunct} 节）。
+
+\citet{butlin2023consciousness} 主张，功能主义应作为工作假设而非既成事实被采纳，因为它使意识问题在经验上可处理：规定了相关计算的科学理论，可以被转译为人工智能架构上可检验的性质。我们列出主要指标与作者对它们的评估，但要注意该文写于 2023 年，且缺少智能体维度；我们会在下文回到这一点。
+
+\paragraph{循环处理} 意识与循环式而非纯粹前馈式的处理相关。算法意义上的循环（在有限意义上）是 RNN 或 LSTM 的属性，但 Transformer 的前向传播不是循环的。
+
+\paragraph{全局工作空间理论} 对人类而言，该理论主张专门的并行模块竞争一个容量有限的工作空间，其内容被全局广播回所有模块。Transformer 的残差流（第~\ref{residualstream} 节）被认为可充当这样的工作空间，但由于它并非明确的瓶颈、也没有真正的循环或向模块的广播，这一论据很弱。不过近期工作表明，残差流内部一个稀疏、容量有限的子空间确实表现得像个瓶颈（见下文）\citep{gurnee2026verbalize}。
+
+\paragraph{高阶理论} 在这一观点下，当一个高阶元认知机制监控一阶知觉表征（把它们标记为例如可靠的而非噪声），并馈入信念形成与动作选择系统时，该状态才成为有意识的。作者认为目前没有系统实现这一组合，但也强调用现有组件在技术上是可行的。
+
+\paragraph{注意图式理论} 按照这一理论，意识源自系统对自身注意的简化预测模型，系统用它来表征并实现对当前注意状态的控制。作者指出，机器注意只是该理论所指注意类型的一个松散类比，绝不等于一个能引导当前注意的自模型。
+
+\paragraph{预测处理} 在这一理论中，知觉被框定为预测误差最小化。大语言模型的训练方式中有这一理论的元素，但作者更多把它视为认知的一般框架，而非意识的独立指标。
+
+\paragraph{能动性} 按这一说法，从反馈中学习并依据特定目标选择输出，被视为意识的一种形式。作者认为强化学习足以构成其基本形式，但这涉及外部设定的目标，而这些目标本身并不属于系统的一部分。
+
+\paragraph{具身} 作者强调，物理身体本身并非此处关键，关键是系统输出的模型会影响其输入，这有助于区分自我引起的变化与世界引起的变化。他们讨论了具有此类模型变体的各类系统——或通过控制机器人，或通过虚拟化身——但认为它们对于动物界普遍存在的那种完整的端到端具身而言，仍是薄弱或不确定的候选。
+
+总体而言，作者持这样的立场：按他们定义的指标，目前没有任何人工智能系统是意识的有力候选；但他们看不出在不久的将来构建满足许多指标的系统有什么明显技术障碍。正如我们将在下文看到，智能体维度与这场争论高度相关。
+
+\citet{chalmers2023could} 在同一年得出了类似结论。他列出了按他的论述大语言模型所缺少的东西：生物学、感官、身体、世界模型与自模型、循环处理、全局工作空间，以及统一的能动性。其中两项障碍正是上文第~\ref{sec:worldmodels} 与~\ref{sec:metacognition} 节的主题，而那里的证据表明这些方面的若干部分目前已被克服或正在被发展。Chalmers 认为当前大语言模型有意识的置信度低于 10\%，但对扩展后的后继系统给出了高得多的可能性。表~\ref{tab:indicators} 给出简化概览。
+
+近期机制可解释性工作聚焦于一个问题：前沿大语言模型的前向传播中是否涌现出一个全局工作空间。\citet{gurnee2026verbalize} 引入了\emph{雅可比透镜}的想法，即为每个词表 token 在残差流中指定一个方向，该方向编码模型将该 token 语言化的倾向（跨语境平均）。他们识别出\emph{J 空间}，它在任一时刻只容纳几十个活跃概念，并主张它具有全局工作空间理论所关联于意识通达的功能剖面。其内容在很大程度上决定模型报告什么，可以在模型做别的事情时按指令被调出，承载多步推理中未说出的中间步骤，并且可以被替换以同时重定向许多不同的下游计算。消融它会使得解析、分类与流利续写等常规处理大体保持完好，却损害那种使当前前沿模型在众多复杂任务上如此强大的灵活推断。作者对现象意识不表态，并强调这一平行是功能性的而非架构性的：没有来自封装模块的输入与反馈；广播发生在单次前向传播内的层深方向上，而不是通过循环回路。这些发现加强了 \citet{butlin2023consciousness} 基于指标的方法的论据，同时并未触及与生物自然主义者（见下文第~\ref{againstfunct} 节）的分歧——因为该分歧不涉及关于大语言模型的事实，而涉及「有意识」意味着什么这一前提。
+
+\begin{table}
+\tiny
+\begin{tabularx}{\textwidth}{@{}p{2.6cm}p{3.4cm}XX@{}}
+\toprule
+\textbf{理论} & \textbf{指标（简化）} & \textbf{裸大语言模型} & \textbf{智能体系统} \\
+\midrule
+循环处理 & 处理中的反馈回路 & 有争议：逐 token 前馈，仅通过自身输出形成循环 & 相同 \\
+全局工作空间 & 容量有限且全局广播的工作空间 & 有争议 & 更接近：共享记忆缓冲馈入感知、规划与行动模块 \\
+高阶理论 & 对自身表征的监控 & 弱且不可靠（第~\ref{sec:metacognition} 节） & 验证模块监控输出，而非内部状态 \\
+注意图式 & 对自身注意的模型 & 无证据 & 无证据 \\
+能动性与具身 & 带反馈的目标追求；身体模型 & 大体缺失 & 能动性部分具备；具身仅见于机器人 \\
+生物主义观点 & 生命、代谢、身体调节 & 缺失 & 缺失 \\
+\bottomrule
+\end{tabularx}
+\caption{意识指标属性的简化概览，以及裸大语言模型与智能体系统满足它们的程度。依据 \citet{butlin2023consciousness} 与 \citet{goldstein2024case}；最后两列的评估仍有争议。}\label{tab:indicators}
+\end{table}
+
+\subsection{对功能主义的拒斥} \label{againstfunct}
+\citep{seth2025conscious} 反驳功能主义，捍卫一种被称为\emph{生物自然主义}的立场。按照这一立场，意识与我们作为活体生物的本性深度交织：其功能是调节一个必须维持自身存在的、脆弱的身体。预测误差最小化这类智能系统的属性，以及空间定向、心理理论与自我反思这类能力，都应被视为服务于「活下去」。这些属性与能力在自然系统与人工系统中可能有局部相似之处，但在后者中，它们并不处在一条生物性的存在链条中被因果地连接起来。换言之，对生物自然主义者而言，有意识要求「把皮肉押在局中」。\footnote{Seth 的文章发表于 \textit{Brain and Behavioural Sciences}，按该刊的惯例格式后附公开同行评论。Leonard Dung 的《我为何不是生物自然主义者》是其中一篇，包含一个反驳论证。}\citet{aru2023feasibility} 持相同论证路线，并补充说大语言模型的输入缺少我们与世界的感官接触所具有的那种丰富的 4E 信息内容（见第~\ref{sec:unit} 节）。因此从神经科学角度看，大语言模型缺少哺乳动物中被认为与意识相关的丘脑—皮层系统的关键特征。
+
+对生物自然主义者而言，人工意识更可能出现于这样的系统：（1）变得更像生命、开始拥有自主的演化与发展轨迹，其智能属性与这些轨迹因果相连；（2）拥有更丰富的信息流，把它们与外部世界连接起来。请注意，与计算功能主义者的分歧因此主要关乎「意识是什么」这一前提，而非关乎大语言模型的事实。
+% maybe add \citep{tononi2015consciousness, findlay2024dissociating} -- more recent but also more of the same
+
+\subsection{自我报告与内部生活}\label{sec:selfreports}
+大语言模型会产出关于体验、思考步骤、情绪等的第一人称报告。至少有两条理由说明这些应当被折价。第一，大语言模型是在充满此类描述的人类文本上训练的。因此这些描述未必与大语言模型及当前语境有联系，而可能外在于两者。第二，在 \citet{shanahan2023roleplaylargelanguagemodels} 的\emph{角色扮演}解释中，模型在结构上就像在扮演一个角色。这也把自我报告与模型本身脱钩：同一个模型既可以扮演声称自己有意识的角色，也可以扮演否认这一点的角色，同样演得很好。这就是所谓的\emph{博弈问题}：训练数据中心理属性标记的丰富，使得这些标记不再能被可靠地使用 \citep{birch2024gaming}。有人提出，如果模型被训练成对具有可计算验证答案的问题做准确内省，自我报告可能变得更有信息量、更可靠 \citep{perez2023eval}；但第~\ref{sec:metacognition} 节表明，我们离那种情形还很远。
+
+在第~\ref{sec:empathy} 节我们搁置了大语言模型是否\emph{感受}到什么。在行为层，引发焦虑的提示会改变随后的自我报告：它们提高大语言模型在焦虑问卷上的得分，而放松提示会部分逆转这一点 \citep{BenZion2026anxiety}。这些发现带有上述两条告诫：无论模型实际内部状态如何，都可以依靠训练中学到的焦虑不同方面之间的联想来回答问题。在表征层，情绪概念对应于激活空间中的方向；而在机制层，沿这些方向操纵会改变模型的输出 \citep{zou2023representation}。可以说，这些状态对行为的调节方式，与情绪在人类及其他动物身上的调节方式颇为相似。按功能主义论述，这使它们成为类似情绪的状态 \citep{Moerland2018emotion}；但它们是否以任何可与人类及其他动物体验情绪相比的方式被感受到，则继承了上文讨论的全部不确定性。
+
+\subsection{智能体视角}
+在写作之时，针对意识与智能体式大语言模型这一特定交叉点的工作很稀少。不过已有论证认为，智能体式架构与至少一种大语言模型意识理论相关。\citet{goldstein2024doeschatgptmind} 观察到，第~\ref{chap:emergent} 章所讨论的那类大语言模型智能体——带有记忆流、检索、反思与规划模块，并通过共享缓冲通信——已经很接近全局工作空间理论（GWT）所要求的架构。他们主张，如果 GWT 是正确的，那么这类智能体就是、或很容易被造得是有意识的；而那些觉得这一结论不可信的人，应把它当作反对 GWT 的证据。持久记忆与长期目标也弥补了 Chalmers 所指出的统一能动性的缺失。
+
+\citet{gurnee2026verbalize} 提出一个有意思的观察：J 空间可能在单次前向传播中模拟了某些功能，而这些功能在智能体架构与思维链提示中也被归因于循环处理。用写出推理解决的问题对 J 空间消融要稳健得多，这表明模型否则会在内部保持这类推理。这把争论带回到一个问题：认知功能究竟被归因于哪个层级——或者任何形式的认知功能被归因于什么。严格发生在模型内部的事情与在系统层面涌现的事情之间的边界无法先验地划出，而取决于任务、提示格式、工具的可用性、交互以及其他语境因素。请注意，这正是认知外部主义者就人类认知功能所主张的 \citep{noe2009outofourheads}。
+
+\subsection{结论}
+在意识与内部状态体验这一问题上，本章开头提到的两类可能错误代价都很高。拟人化已经在发生，带来情感依赖、错置信任与被操纵的风险。而如果这类系统在某种程度上确实有意识或有感受性，拟人否定则会带来大规模的道义错误。\citet{birch2024gaming} 主张采取与概率相称的预防措施，\citet{butlin2023consciousness} 认为概率已高到足以现在就开始评估系统，而一些开发者确实已启动关于模型福祉的研究项目。例如，Anthropic 在 Opus 4 模型发布的文档中加入了福祉评估，并允许其部分模型终止持续辱骂性的对话，作为「万一模型福祉重要」的低成本预防。\footnote{\url{https://www.anthropic.com/research/end-subset-conversations}}无论人们怎么看这些概率，这个话题都已从哲学研讨班走进了工程实践。
+
+% MAYBE FOR TEXT BOX?
+% This section sharpens the question of what the exact level should be at which a property like consciousness should be expected. The same model weights are shared by up to millions of simultaneous conversations. Still, any instance exists for one context window. Parts of it can be copied to an external memory stream and a conversation can be resumed in another instance, or by another agent. Yet it will always be different. Moreover, model traits shift under different prompts or fine-tuning (Section~\ref{sec:metacognition}). In humans, one body typically carries one stream of experience, one history, and one memory. The consistency and linearity of these are also subject to debate, but to a different degree than in LLMs, where these come completely apart. Theories of consciousness were not built for that.
+\section{结语}
+本章追问第五部分所考察的行为背后是什么，以及这是否像驱动人类与动物行为的认知。我们识别出四条一般线索。
+
+第一，内部表征以人类观察者能理解的方式被结构化的程度，因任务与领域而异。在文本上训练的大语言模型可以发展出镜像地理、棋盘状态、故事人物的信念以及所扮演人格特质的表征，并且在某些情形中可以机制性地表明这些表征确实被使用。随机鹦鹉的形象不符合这些发现：毕竟，至少在某些情形中从表征到行为的因果链的存在，证伪了「大语言模型只在表层运作」这一主张。但同样的方法也揭示了表征可能多么不连贯、回答可能多么依赖零碎的启发式。部分原因是人类文本对世界的覆盖并不均匀，部分原因是在某些领域中表层统计已足以满足训练目标。因此，一个\emph{理解}的心智这一形象也不符合。大语言模型是一种新型系统，而我们为人类与其他动物发展出的认知词汇，只能不完美地适用于它们。
+
+第二，知行差距在认知领域再次出现。模型表征的东西多于它自发使用或报告的东西：我们看到了不引导行动的信念状态、未被应用的定义，以及被错误描述的计算。一个合理的假设是：结构化提示与脚手架之所以有效，是因为它们把既有表征与行为连接起来。智能体循环在理论上可以自主提供这种结构与脚手架。在这一点上几乎还没有经验检验：所有表征层与机制层证据都关于裸模型。对智能体而言，表~\ref{tab:levels} 的最后一列只有行为层条目。
+
+% Testing whether this is indeed what happens requires causal interventions during interaction, which have been carried out only in limited case studies.
+
+第三点是，我们现在可以把智能体式扩展描述为\emph{把认知从模型转移到系统}。世界状态可以保存在显式的、外部存储并更新的地图中，自我监控可以实现为验证步骤，而智能体之间共享的记忆可以充当工作空间。按照哲学中的\emph{延展心智}论题，如果我们把笔记本可靠地当作外部记忆来查阅，那么对人类而言它也已成为我们认知系统的一部分 \citep{clark1998extended}。智能体式大语言模型的认知架构正是按这一精神设计的 \citep{sumers2024cognarch}。一个优势是，外化的认知提升了技术的透明度，因为它可以被检查。
+
+第四，在意识问题上，诚实的立场是在所有层级上都不确定。各理论对任何数字系统能否有意识存在分歧，自我报告与其他行为方面是不可靠的判据，而可解释性技术如何能在这个问题上提供信息，目前也尚不清楚。现在能做的是避免那些会误导用户过度归因意识的设计。研究者认为，现在是开始评估模型福祉的时候了 \citep{butlin2023consciousness,long2024taking}。
+
+%systems now and some developers have indeed started research programs on model welfare. Some voices have started raise awareness of model welfare and have suggested to prepare taking precautions proportional to the  
+
+\bibliographystyle{plainnat}
+\bibliography{agenticbook,refs,case,synthetic}

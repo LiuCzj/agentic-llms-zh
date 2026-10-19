@@ -1,0 +1,98 @@
+\begin{tikzpicture}[
+    node distance=2cm,
+    % Style for standard neurons (input/output)
+    neuron/.style={circle, draw=gray!70, fill=white, minimum size=0.65cm, thick},
+    % Style for active sparse features (highlighted)
+    active_feature/.style={circle, draw=teal!80, fill=teal!20, minimum size=0.65cm, thick, font=\bfseries\tiny},
+    % Style for inactive sparse features (greyed out)
+    inactive_feature/.style={circle, draw=gray!30, fill=gray!5, minimum size=0.6cm, thin},
+    % Arrow styles
+    flow_arrow/.style={-{Stealth[scale=1.2]}, line width=1.2pt, color=gray!70},
+    loss_arrow/.style={-{Stealth[scale=1.2]}, line width=1.5pt, dashed},
+    % Text styles
+    layer_label/.style={font=\sffamily\small\bfseries, align=center},
+    math_label/.style={font=\scriptsize\sffamily}
+]
+
+    % ================= LEFT: Input Layer (Dimension d) =================
+    \coordinate (input_col) at (0,0);
+    \foreach \i in {1,2,3} {
+        \node[neuron] (x\i) at ($(input_col)+(0, -\i*1.2)$) {$x_{\i}$};
+    }
+    % Ellipsis for dimension d
+    \node[below=0.3cm of x3, font=\bfseries] (x_dots) {$\vdots$};
+    \node[neuron, below=0.3cm of x_dots] (xd) {$x_d$};
+
+    % Label and Brace indicating dimension d
+    \node[layer_label, above=0.5cm of x1] (input_lbl) {Input Activation\\$x \in \mathbb{R}^d$};
+    \draw[decorate, decoration={brace, amplitude=5pt, mirror}, thick, gray]
+        ($(x1.west)+(-0.5,0)$) -- ($(xd.west)+(-0.5,0)$) node[midway, left=0.3cm, font=\sffamily\small] {Low Dim $d$};
+
+
+    % ================= MIDDLE: Sparse Latent Layer (Dimension N >> d) =================
+    \coordinate (hidden_col) at (5, 1); % Shifted up slightly to show height difference
+    % Draw a tall column of mostly inactive features
+    \foreach \i in {1,2,4,5,7,8} {
+        \node[inactive_feature] (c\i) at ($(hidden_col)+(0, -\i*0.8)$) {};
+    }
+    % Draw a few ACTIVE features (highlighted)
+    \node[active_feature] (c3) at ($(hidden_col)+(0, -3*0.8)$) {$c_3$};
+    \node[active_feature] (c6) at ($(hidden_col)+(0, -6*0.8)$) {$c_6$};
+
+    % Ellipsis for dimension N
+    \node[below=0.2cm of c8, font=\bfseries] (c_dots) {$\vdots$};
+    \node[inactive_feature, below=0.2cm of c_dots] (cN) {};
+
+    % Label and Brace indicating dimension N
+    \node[layer_label, above=0.5cm of c1] (hidden_lbl) {Sparse Latent Features\\$c \in \mathbb{R}^N$};
+    \draw[decorate, decoration={brace, amplitude=5pt}, thick, gray]
+        ($(c1.east)+(0.5,0)$) -- ($(cN.east)+(0.5,0)$) node[midway, right=0.3cm, font=\sffamily\small, align=center] {High Dim $N$\\($N \gg d$)};
+    \node[right=1.2cm of c_dots, font=\sffamily\scriptsize, color=teal, align=center] {Mostly Zero\\(Sparse)};
+
+
+    % ================= RIGHT: Output Layer (Reconstruction) =================
+    \coordinate (output_col) at (10,0);
+    \foreach \i in {1,2,3} {
+        \node[neuron] (hx\i) at ($(output_col)+(0, -\i*1.2)$) {$\hat{x}_{\i}$};
+    }
+    \node[below=0.3cm of hx3, font=\bfseries] (hx_dots) {$\vdots$};
+    \node[neuron, below=0.3cm of hx_dots] (hxd) {$\hat{x}_d$};
+
+    % Label
+    \node[layer_label, above=0.5cm of hx1] (output_lbl) {Reconstruction\\$\hat{x} \in \mathbb{R}^d$};
+
+
+    % ================= CONNECTIONS =================
+
+    % --- Encoder ---
+    % Label over the gap
+    \node at ($(input_lbl.east)!0.5!(hidden_lbl.west)+(0,0.2)$) [font=\sffamily\small, align=center, inner sep=2pt] {Encoder $W_{enc}$\\+ Sparsity (e.g., ReLU)};
+    % Draw lines only to ACTIVE features to reduce clutter and emphasize selection
+    \foreach \inputnode in {x1,x2,x3,xd} {
+        \draw[flow_arrow, opacity=0.3] (\inputnode) -- (c3);
+        \draw[flow_arrow, opacity=0.3] (\inputnode) -- (c6);
+    }
+
+    % --- Decoder ---
+    \node at ($(hidden_lbl.east)!0.5!(output_lbl.west)+(0,0.2)$) [font=\sffamily\small, align=center] {Decoder $W_{dec}$};
+    % Draw lines only from ACTIVE features
+    \foreach \outputnode in {hx1,hx2,hx3,hxd} {
+        \draw[flow_arrow, opacity=0.5] (c3) -- (\outputnode);
+        \draw[flow_arrow, opacity=0.5] (c6) -- (\outputnode);
+    }
+
+
+    % ================= LOSS FUNCTIONS (At bottom) =================
+    \coordinate (bottom_level) at (0, -7.5);
+
+    % 1. Reconstruction Loss (Between Input and Output)
+    \draw[loss_arrow, color=red!70, <->] ($(xd.south)+(0,-0.5)$) to[bend right=15]
+        node[midway, below, font=\sffamily\small, color=red!80] {\textbf{Reconstruction Loss:} $\|x - \hat{x}\|^2$}
+        ($(hxd.south)+(0,-0.5)$);
+
+    % 2. Sparsity Penalty (Pointing to Hidden Layer)
+    \draw[loss_arrow, ->, color=blue!70] ($(cN.south)+(0,-2.0)$) --
+        node[midway, right, font=\sffamily\small, color=blue!80, align=left] {\textbf{Sparsity Penalty:}\\$+ \lambda \|c\|_1$}
+        ($(cN.south)+(0,-0.1)$);
+
+\end{tikzpicture}

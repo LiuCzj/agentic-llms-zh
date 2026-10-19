@@ -1,0 +1,285 @@
+{
+   "sources" : [
+      {
+         "usage" : "toplevel",
+         "filename" : "agenticbook.tex"
+      },
+      {
+         "usage" : "ignore",
+         "filename" : "09215FC57C8D3F418799DA77C959C07C.highlight.minted"
+      },
+      {
+         "usage" : "ignore",
+         "filename" : "0ADF14F7A94670486B11E40F98738B7C.highlight.minted"
+      },
+      {
+         "usage" : "ignore",
+         "filename" : "11BA088BEFD70EE5E721060536F4F09C.highlight.minted"
+      },
+      {
+         "usage" : "ignore",
+         "filename" : "1CE6CACB75187414712D981A735EE974.highlight.minted"
+      },
+      {
+         "usage" : "ignore",
+         "filename" : "3944C6ECF7C9C9E56B417C28E63F0EEE.highlight.minted"
+      },
+      {
+         "usage" : "ignore",
+         "filename" : "532A320AC03732CB88A66BB3F3DF0BC0.highlight.minted"
+      },
+      {
+         "usage" : "ignore",
+         "filename" : "68F623C0F33E110B5E56396A3B65C46D.highlight.minted"
+      },
+      {
+         "usage" : "ignore",
+         "filename" : "77FBE22EFBFB1E88B205B374082C294E.highlight.minted"
+      },
+      {
+         "usage" : "ignore",
+         "filename" : "7A6B0C7798E96EB32302C02E43237055.highlight.minted"
+      },
+      {
+         "usage" : "ignore",
+         "filename" : "8768DFFAA86E8512D495D6FA629D751C.highlight.minted"
+      },
+      {
+         "usage" : "ignore",
+         "filename" : "Assignments/Ass2Reasoning.tex"
+      },
+      {
+         "usage" : "ignore",
+         "filename" : "Assignments/Ass4_societysim.tex"
+      },
+      {
+         "usage" : "ignore",
+         "filename" : "Assignments/Ass_case1.tex"
+      },
+      {
+         "usage" : "ignore",
+         "filename" : "B2056304445FC28AECE29CD608DDE714.highlight.minted"
+      },
+      {
+         "usage" : "ignore",
+         "filename" : "B6BD6D533A37E31F43BF113D8E06D8C5.highlight.minted"
+      },
+      {
+         "usage" : "ignore",
+         "filename" : "C020445E90B9C312AF8A809CB98D4E5B.highlight.minted"
+      },
+      {
+         "usage" : "ignore",
+         "filename" : "CA216A13E4EA093A1E90D68FF04F1BFA.highlight.minted"
+      },
+      {
+         "usage" : "ignore",
+         "filename" : "D14D8CBB08604DD52EBF81530D809952.highlight.minted"
+      },
+      {
+         "usage" : "ignore",
+         "filename" : "FA2FC38A9A9FC0C338D6C0B32E55947B.highlight.minted"
+      },
+      {
+         "usage" : "ignore",
+         "filename" : "_78E6221F6393D1356681DB398F14CE6D.index.minted"
+      },
+      {
+         "usage" : "ignore",
+         "filename" : "agenticbook.bib"
+      },
+      {
+         "usage" : "ignore",
+         "filename" : "case.bib"
+      },
+      {
+         "usage" : "ignore",
+         "filename" : "chapters/01_intro.bbl"
+      },
+      {
+         "usage" : "ignore",
+         "filename" : "chapters/23_concl.bbl"
+      },
+      {
+         "usage" : "ignore",
+         "filename" : "default.style.minted"
+      },
+      {
+         "usage" : "ignore",
+         "filename" : "figures/dalle.jpg"
+      },
+      {
+         "usage" : "ignore",
+         "filename" : "figures/dynaq.tex"
+      },
+      {
+         "usage" : "ignore",
+         "filename" : "figures/imagination.tex"
+      },
+      {
+         "usage" : "ignore",
+         "filename" : "figures/learn.tex"
+      },
+      {
+         "usage" : "ignore",
+         "filename" : "figures/mbrl.tex"
+      },
+      {
+         "usage" : "ignore",
+         "filename" : "figures/rag_pipeline.tikz.tex"
+      },
+      {
+         "usage" : "ignore",
+         "filename" : "figures/reasoningstructures.pdf"
+      },
+      {
+         "usage" : "ignore",
+         "filename" : "figures/rl-icrl.tex"
+      },
+      {
+         "usage" : "ignore",
+         "filename" : "figures/rl-llm.tex"
+      },
+      {
+         "usage" : "ignore",
+         "filename" : "figures/rl-llm2.tex"
+      },
+      {
+         "usage" : "ignore",
+         "filename" : "figures/rl.tex"
+      },
+      {
+         "usage" : "ignore",
+         "filename" : "figures/rl2.tex"
+      },
+      {
+         "usage" : "ignore",
+         "filename" : "figures/rlA.tex"
+      },
+      {
+         "usage" : "ignore",
+         "filename" : "figures/rlB.tex"
+      },
+      {
+         "usage" : "ignore",
+         "filename" : "figures/rlC.tex"
+      },
+      {
+         "usage" : "ignore",
+         "filename" : "figures/rlD.tex"
+      },
+      {
+         "usage" : "ignore",
+         "filename" : "figures/rlE.tex"
+      },
+      {
+         "usage" : "ignore",
+         "filename" : "figures/tax.tex"
+      },
+      {
+         "usage" : "ignore",
+         "filename" : "part1/02_lang.bbl"
+      },
+      {
+         "usage" : "ignore",
+         "filename" : "part1/03_pipeline.bbl"
+      },
+      {
+         "usage" : "ignore",
+         "filename" : "part1/04_scaling.bbl"
+      },
+      {
+         "usage" : "ignore",
+         "filename" : "part1/05_case1_scratch.bbl"
+      },
+      {
+         "usage" : "ignore",
+         "filename" : "part2/06_reasoning.bbl"
+      },
+      {
+         "usage" : "ignore",
+         "filename" : "part2/07_robot.bbl"
+      },
+      {
+         "usage" : "ignore",
+         "filename" : "part2/08_meta.bbl"
+      },
+      {
+         "usage" : "ignore",
+         "filename" : "part2/xx_decision.tex"
+      },
+      {
+         "usage" : "ignore",
+         "filename" : "part3/09_agents.bbl"
+      },
+      {
+         "usage" : "ignore",
+         "filename" : "part3/10_case2_reflection.bbl"
+      },
+      {
+         "usage" : "ignore",
+         "filename" : "part4/11_tools_niki.bbl"
+      },
+      {
+         "usage" : "ignore",
+         "filename" : "part4/12_retrieval_niki.bbl"
+      },
+      {
+         "usage" : "ignore",
+         "filename" : "part4/13_assist.bbl"
+      },
+      {
+         "usage" : "ignore",
+         "filename" : "part4/14_case3_assist.bbl"
+      },
+      {
+         "usage" : "ignore",
+         "filename" : "part5/15_behavior.bbl"
+      },
+      {
+         "usage" : "ignore",
+         "filename" : "part5/16_role-based.bbl"
+      },
+      {
+         "usage" : "ignore",
+         "filename" : "part5/17_emergent.bbl"
+      },
+      {
+         "usage" : "ignore",
+         "filename" : "part5/18_case4_societysim.bbl"
+      },
+      {
+         "usage" : "ignore",
+         "filename" : "part6/19_synthetic.bbl"
+      },
+      {
+         "usage" : "ignore",
+         "filename" : "part6/20_advanced_arch.bbl"
+      },
+      {
+         "usage" : "ignore",
+         "filename" : "part6/21_mechanistic.bbl"
+      },
+      {
+         "usage" : "ignore",
+         "filename" : "part6/22_cognition.bbl"
+      },
+      {
+         "usage" : "ignore",
+         "filename" : "python/mcts2.py"
+      },
+      {
+         "usage" : "ignore",
+         "filename" : "refs.bib"
+      },
+      {
+         "usage" : "ignore",
+         "filename" : "synthetic.bib"
+      }
+   ],
+   "spec_version" : 1,
+   "texlive_version" : "2025",
+   "process" : {
+      "compiler" : "pdflatex"
+   }
+}

@@ -1,0 +1,173 @@
+%\chapter{Case Study 4: Simulating Societies with LLM Agents}\label{chap:generative_agents}
+\chapter[案例研究 4：模拟社会]{案例研究 4：用大语言模型智能体模拟社会}\label{chap:generative_agents}
+
+
+\begin{learningbox}
+
+在本案例研究中，你将通过被广泛采用的生成式智能体框架 \citep{park2023generative}，熟悉基于智能体的社会模拟。
+具体而言，你将能够：
+
+\begin{itemize}[leftmargin=*, nosep]
+    \item 运行并配置由大语言模型驱动的{\em 多智能体社会模拟}。
+    \item 开展一项结构化的{\em 机器心理学}实验。
+    \item 比较两种{\em 认知架构}：标准记忆系统，以及带负面性偏差的记忆系统。
+    \item 考察{\em 人格描述}与架构选择如何塑造智能体的涌现行为。
+    \item 批判性地反思{\em 提示脆弱性}、模型依赖性，以及大语言模型驱动模拟的局限。
+\end{itemize}
+
+\end{learningbox}
+
+
+\section{社会模拟}
+在社会模拟中，生成式智能体是由大语言模型驱动的角色，它们与环境互动，也彼此互动。这些智能体可以规划活动、维护记忆，或对自己的经历进行反思。由 \citet{park2023generative} 提出的生成式智能体框架表明，由大语言模型驱动的角色们能够共同产生可信的日常作息、社会互动，乃至协调一致的群体活动——而这一切都涌现自一个相对简单而优雅的认知架构。
+
+本案例研究的不同之处在于，你将为自己的智能体准备\emph{两套}认知架构，用两者运行同一场景，并比较其涌现行为。其中一套架构对所有记忆一视同仁；另一套引入了\emph{负面性偏差}：负面经历被编码得更强，也更容易被检索和反思。我们将会看到，这种受认知心理学发现启发的非对称性 \citep{baumeister2001bad}，对我们的实验智能体产生了可测量的影响。
+
+%\section{Learning Goals}
+
+本章的目标是理解架构选择——在本例中即智能体内部处理方式的细微改动——如何导致涌现性的后果。你还会看到智能体人格可以多么脆弱：人格描述中的一个词，或记忆权重的一处细微变化，就可能从根本上改变智能体如何行动、规划与反思。
+
+\subsection*{课程材料}
+课程练习材料可在此获取：\\
+\url{https://github.com/DorotaMoravcikova/agentic-llm-course-excercises}
+
+\begin{comment}
+After completing this case, you should be able to:
+
+\begin{enumerate}
+    \item Explain how the LLM-driven agent-based simulation works: the perceive--retrieve--reflect--plan--act loop, and the role of the memory stream.
+    \item Run and configure a multi-agent simulation, and interpret its output logs.
+    \item Observe how a simple agent architecture gives rise to emergent interactions that were not explicitly programmed.
+    \item Reflect on how asymmetric memory encoding and preferential retrieval of negative memories changes emergent behaviour, by comparing two architecture variants.
+\end{enumerate}
+\end{comment}
+
+\section{背景}
+
+\subsection{生成式智能体}
+
+由 \citet{park2023generative} 提出的生成式智能体框架表明，由大语言模型驱动的角色能够产生可信的日常作息、社会互动，乃至协调一致的群体活动。
+
+每个智能体有三个核心组件：
+\begin{enumerate}
+    \item 记忆流：智能体所感知、所做与所想的一切的带时间戳记录。
+    \item 检索函数：当智能体需要行动时，它依据时近性、重要性以及与当前情境的相关性来检索相关记忆。
+    \item 反思机制：智能体定期从原始记忆中综合出更高层次的洞见。
+\end{enumerate}
+
+智能体的\textit{人格}由一段简短的自然语言描述定义——一个{\em 草稿}（scratch）文件，其中规定了角色的姓名、年龄、习得特质与先天特质，以及其生活方式。这段描述被写入每一次大语言模型提示中，从而锚定智能体的行为。
+% As we will see, this anchoring is more fragile than it might appear.
+
+\subsection{坏比好更强}
+
+当嵌入原始生成式智能体模拟中的大语言模型驱动智能体受到批评时，它会形成一条记忆。一小时后受到赞扬，它又会形成另一条记忆。生成式智能体以完全相同的优先级检索这两条记忆——一条负面、一条正面——只要它们在时近性、相关性与重要性上相当。
+
+一般来说，面向基于智能体的社会模拟的认知架构会借鉴认知科学，以产生可信的行为。时近性、相关性与重要性这三个变量受到关于人类记忆检索之洞见的松散启发。重要性变量捕捉的是类似事件的唤醒度或显著性的东西。然而在原始模拟 \citep{park2022social} 中，记忆系统实际上是效价盲的：所有记忆——正面、负面、中性——都以相同的权重被编码和检索。如果这个智能体是人，它会以不同方式对待负效价事件：以更锐利的感觉细节编码它，以更鲜明的生动性检索它，并使它更可能在此后的思绪中重新浮现。心理学研究发现，人们对侮辱的记忆比对赞美更持久。与同事的一次糟糕互动，可能胜过数周的愉快互动。换言之，在我们的心理中，{\em 坏比好更强} \citep{baumeister2001bad}，而这种非对称性在记忆中的后果最为重大。
+
+在本案例研究中，我们检验实现 NEVER（Negative Emotional Valence Enhances Recapitulation，负性情绪效价增强重现）模型的效果——一种更接近人类的记忆检索机制。在 NEVER 增强的智能体中，负面记忆在编码时获得更高的重要性分数。因此，它们更可能被检索，也更可能触发反思。
+% cite our "Good Agent Gone Bad" preprint here
+
+该架构在其他所有方面保持完全一致。这使得一项受控的{\em 机器心理学}实验成为可能，可以比较一种架构选择所带来的影响：效价盲记忆与效价敏感记忆。此外，你将利用这套结构化设置，检验调整智能体初始化（即人格描述与系统提示）所带来的效果。
+
+\subsection{为何这对智能体设计重要}
+
+本案例研究说明了两条重要经验：
+\begin{enumerate}
+    \item 架构选择具有涌现性后果：一个在组件层面看似无害的记忆权重参数，可能随着时间推移在智能体的社会行为、情绪基调与决策上产生剧烈变化。这些涌现效应很难仅从架构本身预测。
+    \item 提示脆弱性：智能体行为对人格描述与系统提示的内容高度敏感。微小的扰动可能带来巨大的行为偏移——这一现象在大语言模型文献中有时被称为\emph{提示敏感性}。
+\end{enumerate}
+\section{实现}
+
+\subsection{模拟环境}
+
+本模拟使用 \citet{park2023generative} 中的 Smallville 环境：一座以 2D 瓦片地图渲染的小镇，智能体在其中往返于各地点、与物体交互并进行对话。
+
+我们的模拟采用一个简化场景：一家咖啡馆，三名智能体。请认识他们：
+\begin{itemize}
+    \item Dolores：一名咖啡师。温暖、有共情心、注重细节。她是\emph{实验}智能体——将接受负面性偏差的那一个。
+    \item Maeve：一名咖啡师，人格画像与 Dolores 相匹配。她是\emph{对照}智能体——标准架构，无负面性偏差。
+    \item Bernard：咖啡馆经理。难以预测、情绪化、偶尔对抗。Bernard 充当一个自然主义的\emph{压力源}：两位咖啡师都暴露于其中的社会摩擦来源。
+\end{itemize}
+%
+这一设置包含三名智能体，其中两名具有相似的角色与位置（在 Bernard 监督下工作的咖啡师），因此可以进行关于智能体架构与初始化的受控实验。在第一步中，Dolores 与 Maeve 被赋予相同的人格特质，并暴露于相同的环境。唯一的差别在于 Dolores 处理记忆的方式：使用以更高重要性编码负面记忆的 NEVER 实现。
+
+\subsection{智能体架构}
+
+每个智能体维护：
+\begin{itemize}
+    \item 一份\textit{人格描述}（草稿文件）：一段简短文本，描述智能体的姓名、特质、职业、关系与目标。
+    \item 一条\textit{记忆流}：带时间戳的观察、行动与反思的列表。
+    \item 一份\textit{当前计划}：对智能体打算做什么的简短描述。
+\end{itemize}
+
+\subsection{认知循环}
+
+在每个模拟步（代表游戏内 10 秒时间）中，每个智能体执行以下循环：
+\begin{enumerate}
+    \item 感知：观察环境的当前状态——其他智能体在做什么、是否有正在进行的对话、周围有何变化。
+    \item 检索：在记忆流中查询相关的过往经历。
+    \item 规划：给定人格描述、检索到的记忆与当前观察，使用大语言模型决定下一步做什么。
+    \item 行动：在环境中执行计划好的动作。
+    \item 反思（周期性）：每隔游戏内数小时，从近期记忆中综合出更高层次的反思。
+\end{enumerate}
+
+上述每一步都涉及一次大语言模型调用。提示由智能体的人格描述（保持恒定）以及相关的检索记忆与当前观察（动态变化）构成。
+
+\subsection{两种架构变体}
+
+你将使用检索函数的两个变体：
+
+\paragraph{变体 A：基线记忆检索}
+检索基于时近性、相关性与重要性的加权组合。这是 \citet{park2023generative} 所描述的标准生成式智能体架构。
+
+\paragraph{变体 B：负面性偏差的记忆检索}
+当一条新记忆被创建时，会评估其情绪效价。检索函数被扩展一个效价项。绝对效价被归一化到 $[0, 1]$，对负面记忆再乘以 1.5，从而产生一个检索层级（负面 $>$ 正面 $>$ 中性）。检索分数变为：
+\begin{equation}\label{eq:retrieval-never}
+    \textit{score} = \alpha_{\text{rec}} \cdot R + \alpha_{\text{rel}} \cdot L + \alpha_{\text{imp}} \cdot I + \alpha_{\text{val}} \cdot V
+\end{equation}
+其中所有 $\alpha = 1$。因此：两个变体之间唯一的差别就是新增的效价项；其余一切完全相同。
+
+\subsection{环境搭建与安装}
+
+克隆代码仓库并按 README 中的说明操作：\\
+\url{https://github.com/DorotaMoravcikova/generative_agents/tree/course-exercises}
+\begin{comment}
+\section{Exercises}
+
+The exercises for this case study are hosted on the course repository. You will find the exercise guide, the answer template, and the grading rubric at:
+
+\begin{center}
+\url{https://github.com/DorotaMoravcikova/generative_agents/tree/course-exercises/course}
+\end{center}
+
+\noindent The repository README contains setup instructions, including how to install the simulation server, configure your LLM, and start a simulation run.
+\end{comment}
+
+\section{讨论}
+
+完成实验后，请反思以下问题：
+
+\begin{enumerate}
+
+\item 提示 vs. 架构：你已看到，人格提示与记忆架构都会影响智能体行为。哪一个杠杆更有力？哪一个更可预测？如果一项模拟要用于后果重大的应用（例如建模政策采纳），你会更愿意用哪一个来塑造智能体行为，为什么？
+
+\item 涌现行为：你是否观察到任何令你意外的智能体行为——即人格或架构中并未明确指定的东西？在你看来，是哪些机制产生了这些涌现行为？
+
+\item 评估挑战：你如何评估一个生成式智能体是否表现良好？效价分数是一个指标，但它本身也是一次大语言模型判断。用一个大语言模型来评估另一个（或同一个）大语言模型的输出，有哪些局限？你能想到替代的评估方法吗？
+
+\item 认知真实性：负面性偏差是认知心理学发现的一个例子。你能想到其他可以按架构方式实现的认知偏差或记忆效应吗？你预期它们的涌现效应会是什么？（例如可考虑：确认偏差、可得性启发式、时近性偏差。）
+
+\end{enumerate}
+
+\section{结语}
+
+本章中，我们熟悉了一个生成式智能体模拟，并用它探讨了智能体式人工智能中的两个重要现象：认知架构选择的涌现效应（负面性偏差），以及智能体行为对提示内容的敏感性（提示脆弱性）。
+
+我们已经看到，记忆加权方式的微小改动——负面记忆获得更高的重要性分数——可以随时间推移在智能体行为上产生可测量的偏移。我们还看到，智能体人格是脆弱的：对人格描述的细微改动可能产生巨大且有时不可预测的行为效应。
+
+这些发现对任何构建大语言模型驱动智能体系统的人都有实际意义。人格并不是行为的可靠锚点。架构——记忆如何存储、检索与反思——以阅读代码时可能看不出的方式塑造着行为。
+
+生成式智能体模拟这一领域尚年轻且在演进。本章的练习让你亲身体验了核心机制与核心挑战。随着该领域成熟，提示鲁棒性、认知架构设计与涌现行为评估这些问题仍将是核心。
+
+\bibliographystyle{plainnat}
+\bibliography{agenticbook,refs,case,synthetic}

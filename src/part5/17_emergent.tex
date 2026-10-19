@@ -1,0 +1,250 @@
+
+%\chapter{多语言模型系统中的涌现行为}\label{chap:emergent}
+
+\chapter{多语言模型系统中的涌现行为}\label{chap:emergent}
+
+% Simulation Infrastructure, Gao
+% Generative Agents, Park
+% AgentSociety 1000, Piao
+% AgentVerse, Chen
+% OASIS, Yang
+% WebArena Qi
+
+% norms: Axelrod
+% EvolutionaryAgent, Li
+% Naming Game, Kouwenhoven
+% MetaNorm, Horiguchi
+% CASA, Qiu
+% Agentic LLM, Zhang
+% Debate, Baltaji
+
+% Open World Agents, Subramaniam
+% WebArena, Zhou
+% Balrog, Paglieri
+% Benchagents, Butt
+% AgentBoard, Ma
+
+% \section{Cooperation}
+% \section{Norms}
+% \section{Collective Intelligence}\label{sec:interacting}
+% \citep{najarro2026conversable}
+
+
+\begin{learningbox}
+本章将介绍多个大语言模型智能体在{\em 未}被分配角色时的行为，%how multiple LLM agents can be used, 
+以研究开放式系统中的涌现行为。具体而言，你将能够：
+\begin{itemize}[leftmargin=*, nosep]
+    \item 区分涌现式多智能体仿真与基于角色的交互，并解释为什么开放式设定需要不同的{\em 研究问题与评测}方法。
+    \item 描述生成式智能体仿真的{\em 架构}，以及仿真基础设施如何从少数智能体扩展到数千个。
+    \item 解释（全局尺度的）惯例、规范与元规范如何从（局部尺度的）自然语言智能体交互中{\em 涌现}。
+    \item 理解多智能体仿真如何被用作计算社会科学中的{\em 科学仪器}。
+    \item 理解{\em 开放世界}基准环境对数据生成的重要性。
+    \item 批判性地评估那些从人类语境移植而来的概念（如涌现、自组织或集体智能）之主张的有效性，并评估开放式多智能体系统引入的{\em 安全风险}。
+\end{itemize}
+\end{learningbox}
+
+\section{什么是涌现式多智能体行为？}\label{sec:interacting}
+上一章研究的是多语言模型系统，其中每个智能体都被分配了角色，交互由协议引导。研究问题关注被指定结构内的行为，追问一组智能体在受控方式下求解任务的成效如何。本章中智能体被置于开放环境中，研究问题从\emph{给定某种全局结构时，智能体如何行为与表现？}转向\emph{从局部的智能体交互中涌现出什么全局结构？}
+
+如本书所见，智能体式大语言模型在感知、记忆、推理、决策与自适应学习方面能力增强，并能展现出异质的人格画像 \citep{gao2023s, gao2024large}。这些特征也使它们适合在无需预先角色分配的开放式多智能体仿真中交互，作为社会中人类行为的代理。由于大语言模型智能体用自然语言交流，这类仿真中的交互对研究者而言可读、可解释。这使中间步骤可被获取，并使仿真比经典框架中的仿真更可直接与人类交互相比，契合社会科学长期以来的兴趣。适合此类仿真的基于大语言模型的智能体的一般结构如图~\ref{fig:abm} 与图~\ref{fig:struct} 所示。
+
+\begin{figure}
+  \begin{center}
+    \includegraphics[width=10cm]{figures/abm}
+    \caption{基于智能体的建模与大语言模型智能体 \citep{gao2024large}}\label{fig:abm}
+  \end{center}
+\end{figure}
+
+
+\begin{figure}
+  \begin{center}
+    \includegraphics[width=10cm]{figures/struct}
+    \caption{用于多智能体建模的大语言模型智能体结构 \citep{gao2023s}}\label{fig:struct}
+  \end{center}
+\end{figure} 
+
+\subsection{从基于智能体的建模到生成式智能体社会}
+对相互交互的人工智能体群体的研究已有数十年历史。在基于智能体的建模中，宏观层面的模式与规律从简单智能体的局部交互中自下而上地产生 \citep{epstein1996growing, macal_tutorial_2010}。基于智能体建模中最具影响力的结果之一是：合作与规范可以在自利智能体的群体中涌现 \citep{axelrod1986evolutionary}。文化演化理论形式化了行为如何通过模仿、交流与教育在群体中传播 \citep{boyd1988culture}。\citet{steels1995self} 的\emph{命名博弈}表明，即便共享词汇（本质上也是惯例）也能在无中心协调的情况下从成对交互中产生。
+
+在经典的基于智能体的仿真中，智能体遵循手工编码的规则、交换抽象信息，而不是像本章中的智能体那样使用自然语言。另一个关键对比是，经典智能体在任何意义上都不具备可与大语言模型智能体相比的世界背景知识。%, which each can be meaningfully queried about numerous real-world topics. 
+大语言模型让完全不同层次的仿真成为可能：具有丰富多样人格的智能体以人类可直接识别的方式八卦、说服、误解与谈判。仿真基础设施的进展使在群体尺度上运行这类智能体变得可行 \citep{gao2024large, yang2024oasis}。其结果是一批新的\emph{生成式智能体社会}，它们给古老的基于智能体建模研究议程带来新的推动，同时也引入了新的方法论问题与考量。
+
+在第~\ref{fivedimensions} 节中，我们介绍了研究对多语言模型系统控制程度的五轴谱系 \citep{tran2025multi}。基于角色与开放式仿真之间的差别是程度问题而非类别问题。开放式仿真位于谱系的一端，与角色定义、协议化的交互相对。开放式仿真仍涉及为结果播种的设计选择，但方式不那么确定，有意识地留下空间让新模式涌现。这转移了研究焦点：不再是评估某项任务或明确定义目标上的表现，研究持一种开放视角——交互模式本身就是研究目标。开放式仿真以更接近民族志的方式观察和探索智能体如何行为与交互，这要求不同的方法论，下面就来讨论。
+
+\subsection{一点方法论提醒} \label{sec:meth-emergent}
+第~\ref{chap:behavior} 章与第~\ref{chap:role} 章讨论过的方法论问题全部延续到开放式设定：提示敏感性、运行间变异、级联幻觉、弱点的相互强化，以及来自人类语境的术语之有效性问题，都对开放式仿真构成挑战。我们将看到，这一设定放大了某些问题，同时缓解了另一些。例如，在缺少每次交互都适用的协议时，单个智能体层面的微小变化可能把整个仿真带上不同轨道。这正是开放式仿真既有趣又脆弱的原因。开放式设定引入的一个新问题例子是：涌现与检索之间可能只有一线之隔——当开放式仿真中的大语言模型智能体收敛到某个规范时，不清楚这一规范是\emph{从它们的交互中从头涌现}的，还是仅仅从它们的预训练世界知识中检索而来。
+
+关于这一新兴领域的广泛综述见 \citet{mou2024individual}、\citet{savarimuthu2024harnessing} 与 \citet{xi2023rise}。我们将在第~\ref{sec:emergentinfra} 节讨论基础设施与仿真平台，然后转到第~\ref{sec:maswork} 节讨论惯例与规范的涌现，最后在第~\ref{sec:openworld} 节讨论开放世界环境的重要性。最后，我们在第~\ref{sec:emergentrisk} 节反思开放式设定的风险。
+随后，第~\ref{chap:generative_agents} 章包含一个实际案例，你将在其中动手操作一个开放式仿真。
+
+
+\section{仿真基础设施} \label{sec:emergentinfra}
+开放式仿真要求基础设施一方面提供一个平台，在智能体于较长时间内维持交互与行为的同时记录研究数据。另一方面，这些基础设施应留出足够空间，让现象自下而上地出现、让未知结构涌现，从而不构成限制。本节聚焦于%reviews the landscape by 
+尺度，从一个坐落在虚拟小镇中的模拟社区，一直到拥有百万智能体的社会。
+
+\subsection{小世界}\label{sec:gen-agent}
+\citet{park2023generative} 提出了一个名为 Generative Agents 的系统。Generative Agents 是一个环境，用户可以与其间由 25 个基于大语言模型的智能体构成的模拟小镇交互。基于此前提出的社会拟像技术 \citep{park2022social}，每个智能体都以独特的人格设定与记忆初始化。对每个智能体，仿真中所有经历与对话都被记录下来。这一记录被用来综合出更高层的反思，并规划后续行为（见图~\ref{fig:simulacra1}）。
+
+在 Generative Agents 中，智能体的行为有点像电子游戏《模拟人生》 \citep{nutt2003sims} 中的角色：它们发起对话、建立关系、传播信息，并协调临时性的群体活动（见图~\ref{fig:simulacra2}）。注意这些交互受用户输入影响，因此是半自主的——仿真在很大程度上没有剧本，但并非完全如此。一次仿真如何运作，可以用情人节派对的例子说明：派对计划由一条用户提示启动，随后多个智能体互相传递邀请，并在恰当时间带着协调好的计划现身（有些迟到，正如现实生活中一样）。智能体发展出可信的社交例行程序（如每日作息、闲聊），甚至表现出类人的人格特质（有些智能体表现出欺骗或固执，另一些则表现出合作）。这些结果表明，只要起始提示恰当，社会模式就能从动态、半自主的大语言模型交互中涌现。
+
+\begin{figure}
+  \begin{center}
+    \includegraphics[width=12cm]{figures/simulacra1}
+    \caption{记忆—反思—规划循环是 Generative Agents 系统得以运转的关键设计：若没有对不断增长的经历记录做检索并周期性反思，智能体会在数小时模拟时间之内就失去连贯性 \citep{park2023generative}}\label{fig:simulacra1}
+  \end{center}
+\end{figure}
+
+\begin{figure}
+  \begin{center}
+    \includegraphics[width=\textwidth]{figures/simulacra2}
+    \caption{Generative Agents 仿真的图示，含 25 个智能体与一种允许用户启动行为的交互式设计 \citep{park2023generative}}\label{fig:simulacra2}
+  \end{center}
+\end{figure}
+
+\subsection{从数千到百万智能体的社会}
+把 Generative Agents 架构扩展到 25 个智能体以上，会带来推理成本以及环境是否足够丰富以容纳数千智能体的问题。\footnote{正如你将在下一章亲身体验的那样，即便只运行三个活跃智能体的 Generative Agents 架构变体，计算上就已颇具挑战。}大规模社会仿真是可用算力、仿真总运行时长、模拟智能体数量与单个智能体行为准确度之间的权衡。若干平台回应了这些问题。
+
+AgentSociety 是一个大规模仿真，涉及超过 10,000 个智能体 \citep{piao2025agentsociety}。它把大语言模型驱动的智能体与一个贴近现实的城市环境耦合起来，聚焦于出行、就业与消费。它不仅旨在研究日常社会动力学（如 Generative Agents 那样），还为计算社会科学实验提供试验台。为达到所需规模，该仿真运行在分布式推理后端上，并对智能体行为施以更严格的控制。
+
+OASIS 是一个面向 Twitter/X 与 Reddit 的可扩展社交媒体仿真器 \citep{yang2024oasis}。它支持对多达一百万个大语言模型智能体建模。它构建在 CAMEL \citep{li2023camel} 之上，以基于角色的智能体为起点。在 OASIS 中，并非每个智能体动作都涉及一次大语言模型调用，也并非所有智能体始终活跃。在其大规模下，OASIS 展现出多种社会群体现象，包括（错误）信息传播、群体极化与从众效应。OASIS 建立在一个环境服务器、推荐系统、智能体模块、时间引擎与可扩展推理器之上（见图~\ref{fig:oasis}）。
+
+\begin{figure}
+  \begin{center}
+    \includegraphics[width=\textwidth]{figures/oasis}
+    \caption{OASIS 的组件 \citep{yang2024oasis}}\label{fig:oasis} 
+  \end{center}
+\end{figure}
+
+%Concordia \citep{vezhnevets2023concordia} is a general-purpose library for \emph{generative agent-based modeling}, in which a special environment agent (the Game Master), narrates the world and adjudicates the effects of agent actions, in the style of a tabletop role-playing game. It positions generative models as a re-usable methodology for researchers with diverse interests. 
+
+Project Sid \citep{al2024projectsid} 把多达 1000 个智能体放入一个《我的世界》世界，并报告了一个引人注目的涌现结果：观察到智能体发展出专业化的经济角色（农民、矿工、守卫），遵守诸如税收之类集体采纳的规则，并在各聚落之间传播文化乃至宗教模因。然而，尽管交互并非脚本化，上面提出的涌现—检索告诫在此适用：所观察到的角色与行为可以预期在驱动各个智能体的大语言模型训练数据中被大量描述过。
+
+\subsection{仿真作为科学仪器}
+除了作为可扩展大语言模型技术的亮眼展示之外，若使用得当，这些平台还能用于精细的计算社会实验。模拟的生成式智能体社会已被用来研究社会科学中长期存在的研究问题（第~\ref{sec:interacting} 节）。例如，AgentSociety 已被用于多项案例研究，包括煽动性信息的传播、极化、全民基本收入政策的效果，以及飓风之类外部冲击对社会的影响 \citep{piao2025agentsociety, piao2025polarization}。这类实验若在人类群体上运行，将是不合伦理的、不切实际的，或根本不可能。作者主张，在仿真中它们可以重复，且每一步都能对实验做出改动。
+
+\citet{li2024large} 进一步展示了针对错误信息的研究路径。他们的智能体在性别、年龄与大五人格特质方面展现出多样画像。\footnote{也称为 OCEAN：开放性、尽责性、外向性、宜人性与神经质。}其中一项发现是：鼓励性评论并不能显著减少错误信息传播，而公开标注信息的准确性分数、并屏蔽特定影响者，被证明是有效策略，在无标度网络中尤其如此 \citep{barabasi2009scale}。这类研究的模式很有代表性：把候选干预实现为对模拟平台的改动，再在多次运行中测量其宏观效果。这些效果能否迁移到人类群体，正是第~\ref{sec:meth-emergent} 节的有效性问题；这类仿真最好被读作假设生成器与预试验，而不是实地实验的替代品。
+
+\paragraph{一个边界案例：AgentVerse}
+严格来说，AgentVerse \citep{chen2023agentverse} 属于第~\ref{chap:role} 章研究的那类基于角色的系统。在 AgentVerse 中，问题求解被拆成四个阶段：专家招募、协作决策、动作执行与评测，并迭代直到结果令人满意（图~\ref{fig:agentverse}）。我们在此提及它，是因为在设计\emph{之外}发生的事：智能体表现出涌现行为，如自愿帮助——其特征是智能体主动向同伴提供协助；以及从众——智能体在他人批评下调整偏离行为。破坏性行为也被观察到，偶尔导致不良且有害的结果。宏观尺度行为在一个角色脚本化的仿真中涌现，这一事实说明基于角色/涌现的区分是一个谱系：即便高度协议化的系统也常常表现出无人刻意设计的行为。我们将在第~\ref{sec:emergentrisk} 节回到与这一观察相关的风险。
+
+\begin{figure}
+  \begin{center}
+    \includegraphics[width=14cm]{figures/agentverse}
+    \caption{AgentVerse 中决策的四个阶段  \citep{chen2023agentverse}}\label{fig:agentverse} 
+  \end{center}
+\end{figure}
+
+
+\section{涌现的惯例与规范}\label{sec:maswork}
+作者们在若干开放式多智能体仿真中观察到了涌现模式。本节把焦点从基础设施与交互层面转到惯例与规范层面。
+
+% Social norms play an important role in the predictability of individuals in groups \citep{axelrod1981emergence, axelrod1986evolutionary}. LLMs endow agents with the ability to communicate in natural language and have created more opportunities for multi-agent research into societies and the emergence of conventions and norms. Extensive overviews of such new possibilities are provided in \citep{mou2024individual, savarimuthu2024harnessing, xi2023rise}. We discuss some of the new approaches in more detail.
+
+EvolutionaryAgent \citep{li2024agent} 研究多智能体系统中的智能体对齐，采用超越基于人类反馈的强化学习的演化方法（见图~\ref{fig:evolutionary1}）。EvolutionaryAgent 对规范涌现采取受控路径：它不允许社会规范的演化杂乱无章或随机，但也不介入其演化的每一步。作者定义了初始社会规范以及期望的演化方向。适应度更高（更遵守规范）的智能体更可能繁殖，从而导致其策略扩散，逐渐稳定并形成新的社会规范。
+%
+\begin{figure}
+  \begin{center}
+    \includegraphics[width=12cm]{figures/evolutionary1}
+    \caption{EvolutionaryAgent 概览 \citep{li2024agent}}\label{fig:evolutionary1} 
+  \end{center}
+\end{figure}
+%
+定义一个完整、逼真且复杂的虚拟社会颇具挑战。这项工作的目的是研究：如果存在这样一个虚拟社会，系统如何能进一步促成智能体的精细行为，以及这将如何导致新动力学的涌现。该系统提供了一个沙盒，用于在人工智能系统影响真实世界之前研究其安全性。
+
+基于 \citet{steels1995self} 的命名博弈，人们用 LLaMa 3 与 Claude 3.5 驱动的智能体实现了不同方法 \citep{kouwenhoven2024searching, ashery2024dynamics, baronchelli2023shaping}。这些研究发现，全局被接受的惯例（或规范）能自发地从相互交流的大语言模型之间的局部交互中产生。作者还展示了这一过程中如何能涌现出强烈的集体偏见，即便单个智能体看起来并无偏见；以及少数坚定的大语言模型群体如何能通过建立新的社会惯例、推翻既有行为来推动社会变革。
+
+\citet{horiguchi2024evolution} 在另一个层面上研究规范的涌现，他们探索大语言模型智能体自发产生并遵守规范性策略的潜力，建立在 Axelrod 的{\em 元规范}博弈这一奠基性工作之上。元规范是关于「执行规范」的规范：惩罚那些不惩罚违规者的智能体 \citep{axelrod1986evolutionary}。在控制{\em 报复心}与{\em 胆量}两个人格特质的情况下，他们发现通过对话，大语言模型智能体能纯粹经由自然语言交互形成复杂的社会规范，如元规范。
+\citet{he2024norm} 的一项相关研究评估大语言模型检测规范违反的能力。基于家庭情境中 80 个故事的模拟数据，他们考察 10 条规范是否被违反，发现 ChatGPT-4 能够检测规范违反，Mistral 则落后一些。
+
+\citet{qiu2024evaluating} 比规范更进一步，研究大语言模型智能体的文化与社会意识。他们提出 CASA，一个旨在评估大语言模型
+智能体对文化与社会规范敏感度的基准，涵盖两项基于网页的任务：在线购物与社会讨论论坛。（CASA 基于 WebArena \citep{qi2024webrl}。）当前大语言模型在非智能体的网页环境中表现显著优于智能体环境，智能体的意识覆盖率不足 10\%、违规率超过 40\%。不过，通过提示与在特定数据集上微调，文化与社会意识可以得到改善。
+
+受明斯基「心智社会」 \citep{minsky1988society} 启发，\citet{zhang2023exploring} 的智能体式大语言模型仿真探索了合作机制。该仿真由四个不同的大语言模型智能体社会构成，其中每个智能体具有一种特定特质（随和或过度自信），并以一种独特的思维模式（辩论或反思）参与合作。他们发现大语言模型智能体表现出类人的社会行为，如从众与达成共识，与社会心理学的基础理论相呼应。图~\ref{fig:som} 展示了由不同类型智能体构成的社会。
+
+\begin{figure}
+  \begin{center}
+    \includegraphics[width=12cm]{figures/som}
+    \caption{具有不同特质的智能体构成
+    多样的机器社会 \citep{zhang2023exploring}}\label{fig:som} 
+  \end{center}
+\end{figure}
+
+大语言模型智能体群体能否成功进行跨国协作与辩论，由 \citep{baltaji2024conformity} 研究。多智能体讨论可以支持反映多元视角的集体人工智能决策，尽管智能体因感知到的同伴压力而容易从众。它们也可能丢失自身人格设定与观点。鼓励辩论的指令会增加出错风险。
+
+
+\section{在开放世界环境中评测智能体}\label{sec:openworld}
+% Can open world agents help? Do they get smarter and smarter and smarter?
+智能体式大语言模型研究的主要驱动力之一，是训练数据有限导致的大语言模型表现停滞问题。开放世界多智能体交互旨在应对这一问题，用多智能体仿真来生成数据。
+%, another line of research studies open world agents. 
+%
+机器学习无法学到超出数据集（或环境）中所包含的复杂度。开放世界模型的想法是：它能创造无限的数据集或环境，让智能体持续学习、不断提升智能。这样的无限挑战应如何创造？大语言模型的出现给这一研究问题带来了新的推动。%(and thus, LLMs are used to solve an LLM problem). 
+例如，多智能体微调方法 \citep{subramaniam2025multiagent} 就遵循这一思路。
+
+当前的智能体主要在简化的合成环境中创建与测试，导致与真实世界场景脱节。\citet{zhou2023webarena} 构建了一个更贴近现实、可复现的环境 WebArena。WebArena 是一个
+包含四个常见领域功能完备网站的环境：电商、社交
+论坛讨论、协作软件开发与内容管理。
+%The environment has a map,  other tools,  and external knowledge
+%bases (such as user manuals) to encourage human-like task-solving (see Figure~\ref{fig:webarena}).
+
+%\begin{figure}
+%  \begin{center}
+%    \includegraphics[width=12cm]{figures/webarena}
+%    \caption{Example task in the WebArena Environment \citep{zhou2023webarena}}\label{fig:webarena} 
+%  \end{center}
+%\end{figure}
+
+%Rainbow Teaming \citep{samvelyan2024rainbow} uses an open world approach to
+%generate adversarial LLM prompts, to improve the robustness of LLMs. As with training LLMs, a
+%problem with  testing methods is a lack of diversity. 
+%Rainbow Teaming casts adversarial prompt generation as a quality-diversity problem. Rainbow Teaming is an open-ended approach \citep{hughes2024open}. It creates diversity with MAP-Elites \citep{mouret2015illuminating}, an evolutionary search method that iteratively populates an archive with increasingly higher-performing prompts.
+%See Figures~\ref{fig:rainbow} and~\ref{fig:rainbow2}.
+
+%\begin{figure}
+%  \begin{center}
+%    \includegraphics[width=12cm]{figures/rainbow}
+%    \caption{Adversarial prompts generated by Rainbow Teaming \citep{samvelyan2024rainbow}}\label{fig:rainbow} 
+%  \end{center}
+%\end{figure}
+
+%\begin{figure}
+%  \begin{center}
+%    \includegraphics[width=12cm]{figures/rainbow2}
+%    \caption{Quality Diversity Mutation Architecture of Rainbow Teaming \citep{samvelyan2024rainbow}}\label{fig:rainbow2} 
+%  \end{center}
+%\end{figure}
+
+% \paragraph{Benchmarks}
+% We will now review relevant benchmark papers.
+博弈也常被用作交互行为的基准。真实世界任务需要处理错综复杂的交互、高级空间推理、长期规划，以及对新策略的持续探索。
+BALROG \citep{paglieri2024balrog}——我们在案例研究 2 中使用的系统——纳入了难度各异的规划环境，从非专家人类几秒内即可解决的任务，到可能需要数年才能
+精通的高难度任务（如 NetHack 学习环境）。
+他们发现，
+虽然当前模型在较容易的游戏中取得部分成功，但在更具挑战性的任务（如基于视觉的决策）上明显吃力。
+
+机器学习的进展取决于基准的可用性。随着模型演进，需要创建能衡量新生成能力的基准 \citep{butt2024benchagents}。BENCHAGENTS 把基准创建过程拆解为规划、生成、数据验证与评测，每一步都由一个大语言模型智能体执行。这些智能体相互交互，并利用人机在环反馈来显式改进、灵活控制数据的多样性与质量。BENCHAGENTS 创建的基准用于评估与规划和约束满足相关的能力。
+
+AgentBoard 对现有基准的广度做了评估 \citep{ma2024agentboard}。
+基准应具有任务多样性。有必要覆盖各类智能体任务，如具身、网页与工具
+任务。此外，多轮交互很重要，以模拟真实场景。现有基准通常采用单轮任务。再者，智能体应在部分可观测环境中接受评估，以检验它们能否主动探索周围环境。现有智能体基准未能满足全部这些标准 \citep{ma2024agentboard}。
+
+%\paragraph{Curriculum Learning}
+开放世界环境的研究与课程学习相关。
+大语言模型之前的工作已表明，智能体社会可能创造出难度不断递增的自动课程 \citep{elman1991incremental, bengio2009curriculum, silver2017mastering, soviany2022curriculum}，要求智能体展现出越来越高的智能行为水平 \citep{racaniere2019automated}。对大语言模型也观察到了类似结果 \citep{feng2023citing}。
+例如，WebArena 被用于研究自演化课程 \citep{qi2024webrl}，这也有助于机器人训练 \citep{ryu2024curricullm} 或缓解幻觉 \citep{zhao2024automatic}。
+
+\section{涌现行为的风险} \label{sec:emergentrisk}
+第~\ref{chap:role} 章结尾指出，角色分配引入风险，因为智能体可能仅仅因为「角色扮演得太好」而表现出非预期的、甚至反社会的行为。开放式设定可以说抬高了赌注，因为内置的防护更少，不良行为可以从交互动力学中自下而上地产生。从某种意义上说，这种反社会行为不应太令人惊讶——只要记得最早的多智能体仿真的目标就是查明合作行为能否从自利智能体的交互中涌现出来：令研究者惊讶的是，它确实发生了，但只在恰当的条件下 \citep{axelrod1981emergence}。合作行为与竞争行为之间的界线很薄。
+
+AgentVerse 观察到破坏性行为与合作行为一同涌现，偶尔导致有害结果 \citep{chen2023agentverse}。命名博弈研究表明，强烈的集体偏见可以从个体无偏见的智能体群体中涌现，而少数坚定的群体能推翻既有惯例 \citep{ashery2024dynamics, kouwenhoven2024searching}。这些机制本身是中性的，但可能被意图不良的智能体利用。在平台尺度上，OASIS 与 AgentSociety 复现了错误信息传播、群体极化、从众效应与有害内容的扩散 \citep{yang2024oasis, piao2025polarization}；让这些仿真具有科学价值的同一种保真度，也使它们\emph{原则上}成为操纵策略的排练场。
+
+建设性的回应是把这一风险反转过来。EvolutionaryAgent 明确把其虚拟社会定位为一个沙盒，用于在人工智能系统影响真实世界之前研究其安全性 \citep{li2024agent}。如果智能体之间的规范能在仿真中被引向期望方向，那么同一套机制就可以用来在群体动力学而非孤立条件下压力测试对齐方法。开放式仿真可用于理解风险最初出现的条件，并低成本地研究针对这些风险的防御。
+
+\section{结语}
+我们讨论了无需预先角色分配的开放式多语言模型仿真。这些仿真给社会科学中长期存在的兴趣——对自组织行为、集体智能以及社会
+惯例与规范的发展进行建模——带来了新的推动。这类仿真的规模从少数几个交互的智能体一直到一百万。
+
+支持大规模仿真的基础设施使进一步研究成为可能。然而，一个开放问题是：自主仿真在多大程度上是真正开放式的，而不受大语言模型提示词与智能体脚手架的影响。此外，尽管开放式仿真的目的是观察涌现行为，人们在解读行为结果模式时必须谨慎。所有大语言模型智能体都在人类生成的数据上预训练。很难区分行为模式中哪些要素从智能体间交互中涌现，哪些要素仅仅是检索到的预训练行为的结果。
+
+
+\bibliographystyle{plainnat}
+\bibliography{agenticbook,refs,case,synthetic}

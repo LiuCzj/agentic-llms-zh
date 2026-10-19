@@ -1,0 +1,30 @@
+.env
+.env.*
+!.env.example
+node_modules/
+build/
+dist/
+logs/
+temp/
+cache/
+*.bak.*
+DOWNLOADS.md
+AGENT.md
+*.aux
+*.out
+*.toc
+*.blg
+*.synctex.gz
+*.fls
+*.fdb_latexmk
+*.bbl
+*.brf
+*.minted
+*.log
+*.tar.gz
+
+# 编译产物主 PDF（src/figures、part*/visuals 内的资源 PDF 不受影响）
+src/agenticbook.pdf
+
+# 根目录原件（仅根目录，不影响 src 内资源图）
+/*.pdf

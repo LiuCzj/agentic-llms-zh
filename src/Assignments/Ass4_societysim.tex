@@ -1,0 +1,170 @@
+\chapter{Case Study 4: Simulating Societies with LLM Agents}\label{chap:generative_agents}
+
+\begin{learningbox}
+
+In this case study you will familiarise yourselves with agent-based social simulations through the lens of the widely adopted Generative Agents framework \citep{park2023generative}.
+
+Specifically, you will be able to:
+
+\begin{itemize}[leftmargin=*, nosep]
+    \item Run and configure a multi-agent social simulation powered by LLMs.
+    \item Work with a structured machine-psychological experiment.
+    \item Compare two cognitive architectures: a standard memory system and one with a negativity bias.
+    \item Investigate how personality descriptions and architectural choices shape emergent agent behaviour.
+    \item Critically reflect on prompt fragility, model dependence, and the limits of LLM-driven simulations.
+\end{itemize}
+
+\end{learningbox}
+
+
+\section{Social Simulation}
+In social simulations, generative agents are LLM-driven characters that interact with an environment and with one another. The agents may plan activities, maintain memories, or reflect on their experiences. The Generative Agents Framework, introduced by \citet{park2023generative}, showed that LLM-powered characters together can produce believable daily routines, social interactions, and even coordinated group activities---all emerging from a relatively simple and elegant cognitive architecture.
+
+The twist in this case study is that you will work with \emph{two} cognitive architectures for your agents, run the same scenario with both, and compare the emergent behavior. One architecture treats all memories equally. The other introduces a \emph{negativity bias}: negative experiences are encoded more strongly and are more likely to be retrieved and reflected upon. We will observe that this asymmetry, inspired by findings from cognitive psychology \citep{baumeister2001bad}, has measurable effects on our experimental agents.
+
+%\section{Learning Goals}
+
+The goal of this chapter is to understand how architectural choices---in our case, small changes in the internal processing of an agent---lead to emergent consequences. You will also see how fragile agent personas can be: a single word in a personality description, or a subtle change in memory weighting, can fundamentally alter how an agent acts, plans, and reflects.
+
+\subsection*{Course Materials}
+You can find the course exercise materials here: \url{https://github.com/DorotaMoravcikova/agentic-llm-course-excercises}
+
+
+After completing this case, you should be able to:
+
+\begin{enumerate}
+    \item Explain how the LLM-driven agent-based simulation works: the perceive--retrieve--reflect--plan--act loop, and the role of the memory stream.
+    \item Run and configure a multi-agent simulation, and interpret its output logs.
+    \item Observe how a simple agent architecture gives rise to emergent interactions that were not explicitly programmed.
+    \item Reflect on how asymmetric memory encoding and preferential retrieval of negative memories changes emergent behaviour, by comparing two architecture variants.
+\end{enumerate}
+
+
+\section{Background}
+
+\subsection{Generative Agents}
+
+The generative agents framework, introduced by \citet{park2023generative}, showed that LLM-powered characters can produce believable daily routines, social interactions, and even coordinate group activities---all emerging from a relatively simple yet elegant cognitive architecture.
+
+Each agent has three core components:
+\begin{enumerate}
+    \item A \textbf{memory stream}: a timestamped log of everything the agent has perceived, done, and thought.
+    \item A \textbf{retrieval function}: when the agent needs to act, it retrieves relevant memories based on recency, importance, and relevance to the current situation.
+    \item A \textbf{reflection mechanism}: periodically, the agent synthesises higher-level insights from its raw memories.
+\end{enumerate}
+
+The agent's \textbf{personality} is defined by a short natural-language description---a ``scratch'' file that specifies the character's name, age, learned and innate traits, and their lifestyle. This description is included in every LLM prompt, anchoring the agent's behaviour. 
+% As we will see, this anchoring is more fragile than it might appear.
+
+\subsection{Bad is Stronger Than Good}
+
+When an LLM-powered agent embedded in the original Generative Agents simulation receives criticism, it forms a memory. When praised an hour later, it forms another memory. Generative agents retrieve the two memories---one negative and one positive---with identical priority, as long as they are equally recent, equally relevant, and equally important. 
+
+In general, cognitive architectures for agent-based social simulations draw on cognitive science to produce believable behaviour. The recency, relevance, and importance variables are loosely inspired on insights about memory retrieval in humans. The importance variable captures something akin to the arousal or salience of an event. However, in the original simulation \citep{park2022social} the memory system is effectively valence-blind: all memories---positive, negative, neutral---are encoded and retrieved with equal weight. If the agent were human, it would treat the negatively valenced event differently: encoding it with sharper sensory detail, retrieving it with greater vividness, and rendering it more likely to resurface in subsequent thoughts. You remember insults longer than compliments. A single bad interaction with a colleague can outweigh weeks of pleasant ones. In other words, in our psychology ``bad is stronger than good'' \citep{baumeister2001bad}, and this asymmetry is nowhere more consequential than in memory.
+
+In this case study, we test the effect of implementing the NEVER (Negative Emotional Valence Enhances Recapitulation) model, a more human-like mechanism for memory retrieval. In the NEVER-augmented agent, negative memories receive higher importance scores at encoding time. As a consequence, they are more likely to be retrieved and more likely to trigger reflections. 
+% cite our "Good Agent Gone Bad" preprint here
+
+The architecture remains identical in every other respect. This allows for a controlled ``machine-psychological'' experiment in which the effects can be compared of an architectural choice: valence-blind versus valence-sensitive memory. In addition, you will use the structured setup to test the effects of adapting the agent initialisations in terms of their personality descriptions and system prompts. 
+
+\subsection{Why This Matters for Agent Design}
+
+This case study illustrates two important lessons:
+\begin{enumerate}
+    \item \textbf{Architectural choices have emergent consequences}: A memory weighting parameter that seems innocuous at the component level can produce dramatic changes in the agent's social behaviour, emotional tone, and decision-making over time. These emergent effects are difficult to predict from the architecture alone.
+    \item \textbf{Prompt fragility}: Agent behaviour is highly sensitive to the contents of personality descriptions and system prompts. Small perturbations can produce large behavioural shifts---a phenomenon sometimes called \emph{prompt sensitivity} in the LLM literature.
+\end{enumerate}
+
+
+\section{Implementation}
+
+\subsection{The Simulation Environment}
+
+The simulation uses the Smallville environment from \citet{park2023generative}: a small town rendered as a 2D tile map, where agents move between locations, interact with objects, and have conversations.
+
+Our simulation features a simplified scenario: a cafe with three agents. Please meet:
+\begin{itemize}
+    \item \textbf{Dolores}: A barista. Warm, empathetic, detail-oriented. The \emph{experimental} agent---the one who will receive the negativity bias.
+    \item \textbf{Maeve}: A barista with a matched personality profile. The \emph{control} agent---standard architecture, no negativity bias.
+    \item \textbf{Bernard}: The cafe manager. Unpredictable, moody, occasionally confrontational. Bernard serves as a naturalistic \emph{stressor}: a source of social friction that both baristas are exposed to.
+\end{itemize}
+
+This setup with three agents of which two have a similar role and position (barista working under supervision of Bernard), allows for a controlled experiment with agent architectures and initialisations. In our first step, Dolores and Maeve are given the same personality traits and are exposed to the same environment. The only difference is in how Dolores processes her memories: using the NEVER implementation that encodes negative memories with higher importance.
+
+\subsection{Agent Architecture}
+
+Each agent maintains:
+\begin{itemize}
+    \item A \textbf{personality description} (the ``scratch'' file): a short text describing the agent's name, traits, occupation, relationships, and goals.
+    \item A \textbf{memory stream}: a list of timestamped observations, actions, and reflections.
+    \item A \textbf{current plan}: a short description of what the agent intends to do.
+\end{itemize}
+
+\subsection{The Cognitive Loop}
+
+At each simulation step (representing 10 seconds of in-game time), each agent executes the following cycle:
+\begin{enumerate}
+    \item \textbf{Perceive}: Observe the current state of the environment---what other agents are doing, any ongoing conversations, changes in the surroundings.
+    \item \textbf{Retrieve}: Query the memory stream for relevant past experiences.
+    \item \textbf{Plan}: Given the personality description, retrieved memories, and current observations, use the LLM to decide what to do next.
+    \item \textbf{Act}: Execute the planned action in the environment.
+    \item \textbf{Reflect} (periodic): Every few hours of in-game time, synthesise higher-level reflections from recent memories.
+\end{enumerate}
+
+Each of these steps involves an LLM call. The prompt is constructed from the agent's personality description (which remains constant) and the relevant retrieved memories and current observations (which are dynamic).
+
+\subsection{Two Architecture Variants}
+
+You will work with two variants of the retrieval function:
+
+\paragraph{Variant A: Baseline memory retrieval.}
+Retrieval is based on a weighted combination of recency, relevance, and importance. This is the standard generative agent architecture as described by \citet{park2023generative}.
+
+\paragraph{Variant B: Negativity-biased memory retrieval.}
+When a new memory is created, its emotional valence is assessed. The retrieval function is extended with a valence term. Absolute valence is normalised to $[0, 1]$ and multiplied by 1.5 for negative memories, producing a retrieval hierarchy (negative $>$ positive $>$ neutral). The retrieval score becomes:
+\begin{equation}\label{eq:retrieval-never}
+    \textit{score} = \alpha_{\text{rec}} \cdot R + \alpha_{\text{rel}} \cdot L + \alpha_{\text{imp}} \cdot I + \alpha_{\text{val}} \cdot V
+\end{equation}
+with all $\alpha = 1$. Thus: the only difference between the two variants is the addition of the valence term; everything else is identical.
+
+\subsection{Setup and Installation}
+
+Clone the repository and follow the instructions in the README:
+
+\url{https://github.com/DorotaMoravcikova/generative_agents/tree/course-exercises}
+
+\section{Exercises}
+
+The exercises for this case study are hosted on the course repository. You will find the exercise guide, the answer template, and the grading rubric at:
+
+\begin{center}
+\url{https://github.com/DorotaMoravcikova/generative_agents/tree/course-exercises/course}
+\end{center}
+
+\noindent The repository README contains setup instructions, including how to install the simulation server, configure your LLM, and start a simulation run.
+
+\section{Discussion}
+
+Having run your experiments, reflect on the following questions:
+
+\begin{enumerate}
+
+\item \textbf{Prompt versus architecture} You have seen that both the personality prompt and the memory architecture influence agent behaviour. Which lever is more powerful? Which is more predictable? If a simulation were to be used for consequential applications such as modelling policy adoption, which would you prefer to use to shape agent behaviour, and why?
+
+\item \textbf{Emergent behaviour} Did you observe any agent behaviours that surprised you---things that were not explicitly specified in the personality or architecture? What mechanisms produced these emergent behaviours in your view?
+
+\item \textbf{Evaluation challenges} How do you evaluate whether a generative agent is behaving well? The valence score is one metric, but it is itself an LLM judgement. What are the limitations of using an LLM to evaluate the output of another LLM (or the same LLM)? Can you think of alternative evaluation approaches?
+
+\item \textbf{Cognitive realism} The negativity bias is one example of a finding from cognitive psychology. Can you think of other cognitive biases or memory effects that could be implemented architecturally? What would you expect their emergent effects to be? (Consider, for example: confirmation bias, the availability heuristic, recency bias.)
+
+\end{enumerate}
+
+\section{Conclusion}
+
+In this chapter we have familiarised ourselves with a generative agent simulation and used it to explore two important phenomena in agentic AI: the emergent effects of cognitive architecture choices (the negativity bias) and the sensitivity of agent behaviour to prompt content (prompt fragility).
+
+We have seen that a small change in how memories are weighted---negative memories receiving higher importance scores---can produce measurable shifts in agent behaviour over time. We have also seen that agent personas are fragile: small changes to personality descriptions can produce large and sometimes unpredictable behavioural effects.
+
+These findings have practical implications for anyone building LLM-driven agent systems. The persona is not a reliable anchor for behaviour. The architecture---how memories are stored, retrieved, and reflected upon---shapes behaviour in ways that may not be apparent from reading the code.
+
+The field of generative agent simulation is young and evolving. The exercises in this chapter have given you hands-on experience with the core mechanisms and the core challenges. As the field matures, the problems of prompt robustness, cognitive architecture design, and emergent behaviour evaluation will remain central.

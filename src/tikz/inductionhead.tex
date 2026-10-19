@@ -1,0 +1,77 @@
+\begin{tikzpicture}[
+    node distance=0pt,
+    token/.style={
+        rectangle,
+        draw=gray!50,
+        thick,
+        minimum height=1.4cm,
+        text depth=0.3ex,
+        text height=0.8em,
+        font=\sffamily\Large,
+        inner xsep=6pt,
+        outer sep=0pt,
+        anchor=west
+    },
+    red_highlight/.style={fill=red!40},
+    purple_highlight/.style={fill=blue!30!purple!40},
+    grey_border/.style={draw=gray!90, line width=2.5pt},
+    attention_arrow/.style={
+        ->,
+        >={Stealth[length=4mm, width=3mm]},
+        color=red!60,
+        line width=2.5pt,
+        font=\sffamily\Large,
+        cap=round
+    },
+    label_text/.style={
+        font=\sffamily,
+        color=darkgray!70,
+        align=left
+    },
+    bold_label/.style={
+        font=\sffamily\bfseries,
+        color=gray!90
+    }
+]
+
+% --- First Sequence ---
+\node[font=\sffamily\large, color=gray!80, anchor=south west] at (0, 1.5) {Random Tokens};
+\node[token] (t1_1) at (0,0) {Category};
+\node[token] (t1_2) at (t1_1.east) {40};
+\node[token] (t1_3) at (t1_2.east) {ids};
+\node[token] (t1_4) at (t1_3.east) {node};
+\node[token, red_highlight] (t1_5) at (t1_4.east) {struction};
+
+% --- Ellipsis ---
+\node[font=\sffamily\Large, color=gray!80, right=0.5cm of t1_5] (ellipsis) {...};
+
+% --- Second Sequence ---
+\node[font=\sffamily\large, color=gray!80, anchor=south west] at ($(ellipsis.east)+(0.5, 1.5)$) {Repeat of Random Tokens};
+\node[token, right=0.5cm of ellipsis] (t2_1) {Category};
+\node[token] (t2_2) at (t2_1.east) {40};
+\node[token] (t2_3) at (t2_2.east) {ids};
+\node[token, grey_border] (t2_4) at (t2_3.east) {node};
+\node[token, purple_highlight] (t2_5) at (t2_4.east) {struction};
+
+% --- Attention Arrow ---
+% The arrow in the image goes from the second 'node' to the first 'struction'
+\draw[attention_arrow] (t2_4.north) to[out=90, in=90, looseness=0.8] node[above=0.3cm] {attention} (t1_5.north);
+
+
+% --- Bottom Labels ---
+
+% Label under the first 'node'
+\draw[gray!50, thick] (t1_4.south) -- ++(0,-0.8cm) coordinate (l1_line);
+\node[label_text, below=0.1cm of l1_line, anchor=north] {
+    {\bfseries prefix} of attended-to-token\\
+    = current token
+};
+
+% Label under the second 'struction'
+\draw[gray!50, thick] (t2_5.south) -- ++(0,-0.8cm) coordinate (l2_line);
+\node[label_text, below=0.1cm of l2_line, anchor=north west, xshift=-1cm] {
+    Attended-to-token is {\bfseries copied}. The corresponding\\
+    \colorbox{blue!30!purple!40}{\strut logit} is increased for the next token.
+};
+
+\end{tikzpicture}

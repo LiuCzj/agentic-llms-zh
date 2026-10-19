@@ -1,0 +1,190 @@
+%\chapter[案例研究 3：多智能体诊断]{案例研究 3：构建多智能体诊断框架}
+
+\chapter[案例研究 3：多智能体诊断]{案例研究 3：构建多智能体诊断框架}
+
+\begin{learningbox}
+在本案例研究中，你将获得为高风险应用领域构建多智能体系统的动手经验。
+具体而言，你将能够：
+\begin{itemize}[leftmargin=*, nosep]
+    \item 实现一个{\em 医院诊断工作流}，让规划器智能体与执行器智能体通过共享上下文通信。
+    \item 把训练好的机器学习{\em 分类器作为工具}集成进智能体流水线。
+    \item 用语言模型替换基于规则的规划器，并{\em 评估}其对路由与诊断准确率的影响。
+    \item 用分类与路由指标评估系统表现，把规划器错误与执行器错误区分开来。
+    \item 批判性地反思在医疗场景中部署智能体系统的{\em 局限、风险与伦理}考量。
+\end{itemize}
+\end{learningbox}
+
+
+\section{场景概览}
+
+本案例研究聚焦于构建并扩展一个简化的多智能体医院仿真，它使用受模型上下文协议（MCP，第~\ref{sec:tools} 章）启发的共享上下文 \citep{xinyi2026mcp}。本案例研究旨在提供高风险领域中智能体架构的动手经验，突出协调、规划、评测与安全方面的考量。
+
+你将模拟一个医院场景下的诊断工作流。患者病例由仅通过共享上下文交互的智能体处理：
+\begin{itemize}
+    \item \textit{规划器智能体}决定应遵循哪条（些）诊断路径。
+    \item \textit{执行器智能体}应用训练好的机器学习分类器产出诊断。
+    \item \textit{共享上下文}存储病例、任务、中间决策与结果。
+\end{itemize}
+仿真以离散步骤运行，并记录病例如何流经系统。与前几个案例研究一样，目标\emph{不是}构建一个临床上有效的系统。目标是让你理解智能体架构在高风险领域中的行为：智能体如何通过共享状态协调、语言模型被置于分诊角色时表现如何，以及此类系统的局限与安全隐忧从何而来。\footnote{本案例研究部分基于 Ayushman Pranav 的教程 \emph{Modeling Hospital Intelligence with MCP: A Multi-Agent Diagnostic Simulation}，见 \url{https://medium.com/@AyushmanPranav/modeling-hospital-intelligence-with-mcp-a-multi-agent-diagnostic-simulation-afeff0dd885d}。}
+
+
+\section{环境搭建}
+\label{sec:case3-setup}
+
+与前几个案例研究一样，我们建议在专用的虚拟环境中工作，使用 Python 3.10 或更高版本（搭建说明见代码清单~\ref{lst:case3-setup}）。
+
+\begin{listing}[!ht]
+\begin{minted}[
+frame=lines,
+framesep=2mm,
+baselinestretch=1.0,
+fontsize=\footnotesize,
+linenos
+]{bash}
+# 创建并激活虚拟环境
+python3 -m venv venv
+source venv/bin/activate        # Windows：venv\Scripts\activate
+
+# 安装依赖
+pip install -r requirements.txt
+\end{minted}
+\caption{搭建案例研究 3 的环境}
+\label{lst:case3-setup}
+\end{listing}
+
+\begin{tcolorbox}[
+    colback=blue!10!white,
+    colframe=blue!85!black,
+    title={\faRocket\quad 在 GitHub 上查看！},
+    fonttitle=\bfseries,
+    coltitle=white,
+    boxrule=1pt,
+    arc=4pt,
+    left=5pt,
+    right=5pt,
+    top=5pt,
+    bottom=5pt,
+    enhanced
+]
+基线代码、数据文件与训练好的模型可在以下位置获取：\\
+\href{https://github.com/Agentic-LLMs/Agentic-AI-tutorials/tree/main/case3}{\faCode\quad GitHub 上的\textbf{作业 3}\footnote{https://github.com/Agentic-LLMs/Agentic-AI-tutorials/tree/main/case3}}
+\end{tcolorbox}
+
+
+\section{实现步骤}
+\label{sec:case3-implementation}
+
+\subsection{第 0 步：训练诊断模型}
+
+我们提供了一个脚本 \texttt{0\_train\_models.py}，它在三个公开数据集上训练简单分类器（随机森林）：
+
+\begin{itemize}
+    \item \textbf{糖尿病}——Pima 印第安人糖尿病数据集。
+    \item \textbf{乳腺癌}——威斯康星乳腺癌数据集，可直接通过 \texttt{sklearn.datasets} 获取。
+    \item \textbf{心脏病}——UCI 心脏病数据集。
+\end{itemize}
+%
+执行所提供的训练脚本，并把得到的模型保存起来备用；第 1、2 步中的执行器智能体会把这些训练好的模型作为工具加载，而不是每次运行都重新训练。
+
+\paragraph{交付物} 三种疾病各自训练好的模型文件（或一份清晰、可复现的重建脚本）。
+
+
+\subsection{第 1 步：理解并运行基线}
+
+基线实现 \texttt{1\_basic\_mcp.py} 使用三个基于规则的规划器智能体，每个都硬编码对应一种特定疾病。在运行任何东西之前，请仔细阅读代码。它实现了本案例研究中反复出现的三个组件：
+
+\begin{itemize}
+    \item \textbf{共享上下文（类 MCP 层）。}一个中心数据结构，存储到来的患者病例、已分配的诊断任务与诊断结果。所有智能体\emph{仅}通过该共享上下文交互，绝不彼此直接通信，这与第~\ref{sec:tools} 节中讨论的模型上下文协议的共享状态协调模式一致。
+    \item \textbf{规划器智能体。}每个基于规则的规划器读取未分配的病例，用一条固定规则决定自己的疾病领域是否适用，并在共享上下文中创建一个任务。
+    \item \textbf{执行器智能体。}每个执行器读取分配给其专业的任务，运行第 0 步中相应训练好的机器学习分类器，产出一个预测，并把结果写回共享上下文。
+\end{itemize}
+
+运行基线仿真，观察单个患者病例如何流经系统：从到达、经过规划与任务创建，到执行并记录结果。
+
+\paragraph{分析问题} 评估这个基线设置有多贴近现实。性能被评测得如何？在处理患者与诊断的方式中隐含了哪些假设？
+
+
+
+\subsection[第 2 步：替换基于规则的规划器]{第 2 步：用语言模型智能体替换基于规则的规划器}
+
+第二部分 \texttt{2\_llm\_mcp.py} 用单个基于大语言模型的规划器智能体替换三个基于规则的规划器。这对规划器来说是难得多的工作：现在每个患者病例把取自\emph{全部三个}数据集的特征合并成一条记录，并通过所提供的 \texttt{make\_case\_text} 函数转换为文本描述，而该函数不允许你修改。大语言模型规划器必须阅读这条合并的文本病例描述，在没有硬编码规则的情况下决定适用哪条（些）诊断路径。
+
+你的任务是：
+\begin{itemize}
+    \item 实现一个函数，调用真实的大语言模型（例如通过 Ollama 使用本地模型，或使用 OpenAI、Gemini 的 API），为给定病例获得规划器的决策；
+    \item 实现 \texttt{LLMPlannerAgent} 的 \texttt{step()} 方法，使其为每个病例选择一条或多条诊断路径以及一个主诊断；
+    \item 优雅地处理畸形或无法解析的大语言模型输出，而不是让仿真因一次坏回复而崩溃；
+    \item 记录每一次规划器决策及其对应的病例，以便在运行之后分析规划器行为。
+\end{itemize}
+%
+由于规划器现在必须从非结构化文本而非固定规则推断相关性，这一步应让你直接体验到大语言模型被置于决策角色时出现的可靠性问题：解析失败、格式不一致，以及大语言模型的路由决策与数据集金标准标签之间的不一致。
+
+\paragraph{交付物} 一个可工作的 \texttt{LLMPlannerAgent}、一份关于你使用了哪个大语言模型以及如何访问它的简短说明（本地还是 API），以及一次完整仿真运行所记录的规划器决策。
+
+
+
+\section{评测}
+\label{sec:case3-evaluation}
+
+你必须评测系统的两个组件，并把两项评测分开：
+
+\begin{itemize}
+    \item 模型（执行器）性能：用混淆矩阵与标准分类指标（准确率、精确率、召回率、F1）评估每种疾病的执行器预测。
+    \item 规划器性能：用路由决策的精确率与召回率（病例是否被送到正确的疾病路径？）以及主诊断准确率（规划器是否正确识别出主要关切？）来评估大语言模型的分诊质量。
+\end{itemize}
+%
+在你的报告中，要把因路由错误导致的误差（规划器错误）与因模型预测错误导致的误差（执行器错误）清楚地区分开。一个病例可以因任一原因独立失败：路由正确的病例仍可能被执行器误分类，而本可正确分类的病例也可能因规划器从未把它路由到正确路径而被完全漏掉。只报告一个端到端准确率数字会掩盖这一区别，对本案例研究而言并不充分。
+
+
+\section{反思问题}
+\label{sec:case3-reflection}
+
+以下问题旨在引导你写一份简短的实现报告。你不需要写成叙事性长文；简洁、直接的回答即可，并且你应准备好口头展开论述。
+
+\paragraph{A. 基线架构}
+\begin{itemize}
+    \item 用至多五句话描述单个患者病例在基线系统中的流转过程。
+    \item 每个基线病例都从某个数据集中采样，因此按构造只属于一个疾病领域。这对基于规则的规划器如何「决策」意味着什么？这是分诊的逼真模型吗？
+    \item 第 0 步中的分类器是在与生成仿真病例相同的数据分布上训练和评估的。为什么这在方法论上有问题？更公平的评测协议应该是什么样？
+\end{itemize}
+
+\paragraph{B. 大语言模型规划器设计}
+\begin{itemize}
+    \item 你使用了哪个大语言模型，如何访问它（本地模型、API）？简要说明选择理由。
+    \item \texttt{make\_case\_text} 函数把患者呈现为取自三个彼此独立、互不相关数据集的特征组合。为什么这在医学上不现实？这对本次练习的目的有影响吗？
+    \item 描述你在 \texttt{step()} 实现中的一个具体设计选择——例如你如何处理解析失败、弃答，或被路由到多种疾病的病例——并解释为什么这样设计。
+\end{itemize}
+
+\paragraph{C. 结果}
+\begin{itemize}
+    \item 报告每种疾病的分诊精确率与召回率，以及执行器模型的混淆矩阵。这些数字告诉了你整个系统的运行效果如何？
+    \item 大语言模型规划器可以把单个病例同时路由到多种疾病。给出一个这样做有益的场景例子，以及一个可能有害的场景例子。
+\end{itemize}
+
+\paragraph{D. 反思}
+\begin{itemize}
+    \item 找出一个在医疗分诊情境中把大语言模型用作规划器所特有的安全风险，并描述可以如何缓解。
+    \item 用原始单一疾病数据集的金标准标签来比对大语言模型的路由决策，以此评估分诊表现，这样公平吗？说明你有哪些保留意见。
+\end{itemize}
+
+
+\subsection*{可选扩展}
+
+作为附加练习，你可以通过让患者采样更贴近现实来扩展系统（例如用更有原则的先验采样混合或共病病例）。你也可以从 UCI 仓库再添加一种疾病，或引入一个评估器或验证器智能体，在规划器的决策到达执行器之前对其加以检查。另一个想法是模拟人机在环的决策，或引入不确定性阈值与弃答机制，让规划器在没把握时拒绝路由某个病例。最后，你可以集成来自外部知识源的检索（第~\ref{sec:rag} 章），让规划器把路由决策接地到临床参考资料上，而不只是依赖参数化知识。
+
+
+\subsection*{说明}
+
+本作业是教学性的、非临床的。不要为你在这里构建的任何系统主张医学有效性。重点在于清晰、可复现与批判性反思，而非原始性能。在这种场景中，一个保守路由、不确定时弃答、并对其局限保持透明的系统，是比一个最大化准确率却隐藏自身失效模式的系统更好的结果。
+
+
+\section{结语}
+
+本案例研究把本书前面几部分的若干线索汇聚起来：智能体角色与协调（第三部分）、工具使用与模型上下文协议（第~\ref{sec:tools} 章），以及在复合智能体系统中区分规划错误与执行错误所需的评测方法论。通过先构建一个基于规则的基线，再用单个基于大语言模型的规划器替换其规划器，你直接看到了：一旦规划依赖大语言模型对非结构化文本病例描述的解读而非固定规则，规划会变得困难多少。
+
+选择医疗作为框架是有意为之：在这个领域，一个过度自信、无法解释的错误代价很高，而弃答、人类监督与可审计性等问题是核心设计需求。同样的协调模式远不止适用于医疗，而是适用于任何由语言模型负责路由决策、再由其他更专门组件据此行动的系统。
+
+
+
+\bibliographystyle{plainnat}
+\bibliography{agenticbook,refs,case,synthetic}

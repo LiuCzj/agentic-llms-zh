@@ -1,0 +1,394 @@
+% % chapter5_nanochat.tex
+% % Case Study 1: Building LLMs from Scratch (nanochat assignment)
+% %
+% % Intended to be \input{} into the main book document.
+% % To compile standalone, uncomment the preamble and \end{document} below.
+% %
+% %% ── STANDALONE PREAMBLE ─────────────────────────────────────────────────────
+% \documentclass[12pt]{book}
+% \usepackage[utf8]{inputenc}
+% \usepackage[T1]{fontenc}
+% \usepackage{amsmath,amssymb}
+% \usepackage{listings}
+% \usepackage[inline]{enumitem}
+% \usepackage{xcolor}
+% \usepackage{booktabs}
+% \usepackage{array}
+% \usepackage{hyperref}
+% \usepackage{natbib}
+% \usepackage[most]{tcolorbox}
+\tcbset{
+  objectivebox/.style={
+    colback=blue!6!white,
+    colframe=blue!45!black,
+    fonttitle=\bfseries,
+    title=Learning Objectives,
+    left=6pt, right=6pt, top=4pt, bottom=4pt,
+    before upper={\setlength{\parskip}{4pt}},
+  },
+  readfirstbox/.style={
+    colback=orange!12!white,
+    colframe=orange!70!black,
+    fonttitle=\bfseries\large,
+    title=Read this assignment in full before you start,
+    left=8pt, right=8pt, top=6pt, bottom=6pt,
+    before upper={\setlength{\parskip}{4pt}},
+  }
+}
+\lstset{
+  basicstyle=\ttfamily\footnotesize,
+  breaklines=true,
+  frame=single,
+  numbers=left,
+  numberstyle=\tiny,
+  xleftmargin=2em,
+  framexleftmargin=2em,
+}
+% \begin{document}
+% %% ────────────────────────────────────────────────────────────────────────────
+
+\chapter{Case Study 1: Building LLMs from Scratch}
+\label{ch:nanochat}
+
+
+\begin{learningbox}
+In this case study you will learn how to train your own LLM from scratch. 
+Specifically, you will be able to:
+\begin{itemize}[leftmargin=*, nosep]
+    \item Explain the end-to-end training pipeline of a ChatGPT-style LLM, distinguishing the purpose and mechanics of each stage: tokenization, pre-training, mid-training, and supervised fine-tuning.
+    \item Configure and train a Byte Pair Encoding (BPE) tokenizer and articulate the trade-offs involved in choosing a vocabulary size.
+    \item Describe the transformer architecture at a mechanistic level: attention heads, layer depth, embedding dimensions. You will investigate how these hyperparameters interact with model capacity and compute budget.
+    \item Evaluate a trained language model on standard benchmarks (ARC-Easy, ARC-Challenge, GSM-8K) and interpret results critically, including failure modes.
+    \item Critically reflect on the ethical, environmental, and access dimensions of LLM training, including cost as a barrier to entry and data curation as a values-laden choice.
+    \item Access and navigate the information related to open-access LLM models. This includes reading model cards, training reports, reading code related to training LLMs, and other types of hub entries.
+\end{itemize}
+\end{learningbox}
+
+
+\begin{comment}
+\begin{tcolorbox}[objectivebox]
+After completing this case study, you should be able to:
+\begin{enumerate}
+    \item Explain the end-to-end training pipeline of a ChatGPT-style LLM, distinguishing the purpose and mechanics of each stage: tokenization, pre-training, mid-training, and supervised fine-tuning.
+    \item Configure and train a Byte Pair Encoding (BPE) tokenizer and articulate the trade-offs involved in choosing a vocabulary size.
+    \item Describe the transformer architecture at a mechanistic level: attention heads, layer depth, embedding dimensions. You will investigate how these hyperparameters interact with model capacity and compute budget.
+    \item Evaluate a trained language model on standard benchmarks (ARC-Easy, ARC-Challenge, GSM-8K) and interpret results critically, including failure modes.
+    \item Critically reflect on the ethical, environmental, and access dimensions of LLM training, including cost as a barrier to entry and data curation as a values-laden choice.
+    \item Access and navigate the information related to open-access LLM models. This includes reading model cards, training reports, reading code related to training LLMs, and other types of hub entries.
+\end{enumerate}
+\end{tcolorbox}
+\end{comment}
+
+In this chapter we work through a practical case that covers the full lifecycle of a modern ChatGPT-style language model.  We use \textit{nanochat}\footnote{\url{https://github.com/karpathy/nanochat}}, a minimal, single-codebase, full-stack implementation of an instruction-following LLM released by, Andrej Karpathy in April 2025. Unlike his earlier \textit{nanoGPT}, which covered pre-training only, nanochat implements the complete training pipeline: a Byte Pair Encoding tokenizer, pre-training on web text followed by supervised fine-tuning (SFT) on benchmark datasets, an inference server, and a chat web UI.
+
+The code uses mostly pure Python with minimal dependencies, and therefore is easy to use and extend. The codebase comprises roughly 8{,}000 lines of Python and a small amount of Rust.\footnote{If that number sounds large, it is worth noting that the corresponding proprietary systems run to millions of lines. Nanochat is aimed to be a small self-contained version.}
+
+The performance of nanochat is striking: a GPT-2-capable LLM (which cost $\sim$\$43,000 to train in 2019 \citep{radford2019language}) for only \$48 ($\sim$2 hours of 8xH100 GPU node). While this compute is not exactly commonplace for standard student projects at a university, we can scale down the experiment to make it suited to a hands-on course assignment. It is important to realize that every gradient update and every design decision is visible, from raw bytes to a working chat assistant.
+
+We will take you trough the nanochat pipeline across four tasks that you should all perform. Because GPU budgets on a course are limited, you will train a \emph{small} model (depth~4, depending on availability, see Section~\ref{sec:preparation}); you will then reflect on what may happen at larger scale using some theory and the published (nanochat) benchmarks.
+
+\section{Learning Goals}
+\label{sec:learning-goals}
+
+The goal of this case study is to give you direct, hands-on experience with every stage of the modern LLM training pipeline, from raw text to a deployed chat assistant. This experience will ground the theoretical concepts from Chapters~2--4 in observable, debuggable code.
+
+\section{Background: Karpathy's nanochat}
+\label{sec:background}
+
+\texttt{nanochat} is configured out of the box to train a compute-optimal model by setting a single complexity dial: \texttt{--depth}, which specifies the number of transformer layers. All other hyperparameters---embedding width, number of attention heads, learning rate schedule, training horizon, weight decay---are derived automatically in a near-optimal way. This keeps the configuration space manageable while preserving the full educational value of understanding what each parameter does.
+
+The training pipeline proceeds with the by now hopefully familiar stages, which are briefly described next.
+
+\paragraph{Pretraining.}  The model is trained on approximately 6~billion tokens drawn from CLIMBMix \citep{diao2025nemotronclimb}, a clustering-based iteratively bootstrapped data mixture corpus.  A depth-24 ($\sim $1.4B-parameter) model trains to a validation loss of 2.41 (0.717~bits-per-byte) in roughly 4~hours on an 4$\times$H100 node on the Dutch Snellius\footnote{\url{https://servicedesk.surf.nl/wiki/spaces/WIKI/pages/30660184/Snellius}} compute cluster.
+
+\paragraph{Supervised finetuning (SFT).}  Starting from the pretrained checkpoint, the model is finetuned on a mixture of instruction-following and reasoning data: SmolTalk \citep{benallal2024smoltalk} (460K general-purpose conversations), MMLU (multiple-choice knowledge questions, 3~epochs), GSM-8K (grade-school mathematics, 4~epochs), identity conversations, and synthetic spelling tasks---approximately 1.1~million training examples in total. Note that  the cross-entropy loss is computed \emph{only on assistant tokens}, not on user prompts, mirroring the InstructGPT training procedure \citep{ouyang2022training}.
+
+Before each training stage, a BPE tokenizer is trained on 2~billion characters using a Rust implementation, producing a vocabulary of 32{,}768 tokens in under one minute.
+
+A web inference server and a lightweight JavaScript chat UI are included out of the box, allowing immediate interaction with your trained model.
+
+\paragraph{Supplementary resources.}  Two freely available courses provide complementary perspectives on the material in this case study.  The \textit{Hugging Face LLM Course} \citep{huggingface2022course} introduces the \texttt{transformers}, \texttt{datasets}, \texttt{tokenizers}, and \texttt{accelerate} libraries, and the Hugging Face Hub through which most open-weight models are distributed and evaluated today. Mathieu Labonne's \textit{LLM Course} \citep{labonne2023llmcourse} provides a practitioner roadmap covering pre-training data curation, parameter-efficient fine-tuning (LoRA, QLoRA), preference alignment (DPO, PPO, GRPO), quantization (GGUF, GPTQ), and production inference serving (vLLM, TGI).  Together these resources situate nanochat within the broader open-source LLM ecosystem and are referenced explicitly in Tasks~3 and~4. You are also free to browse around for additional resources. It is strongly recommended to link and reference sources in your report where needed.
+
+\section{Experiment Preparation}
+\label{sec:preparation}
+
+\paragraph{Repository.}  Clone the course repository and read the README carefully before writing any code.
+
+\begin{lstlisting}[language=bash, caption={Cloning the nanochat repository}]
+git clone git@github.com:karpathy/nanochat.git
+\end{lstlisting}
+
+\paragraph{Compute.}  No dedicated compute is necessary. You may use your own laptop (with a GPU), the LIACS DSLab, or the machines in the LIACS computer rooms in Gorlaeus. 
+The experiments are planned  so that each run completes a maximum of approximately 8~hours. For pretraining, use a \texttt{--depth~4} configuration; \texttt{--depth~2} is acceptable if your hardware does not permits the larger model. Do \emph{not} attempt depth~$\geq$12 unless you have some serious hardware.
+
+\paragraph{Logging.}  nanochat logs training loss, validation loss, and bits-per-byte at configurable intervals to your terminal, and aditional functionality for reporting and saving information during the run is available. It is therefore wise to enable structured logging to a \texttt{.jsonl} file from the start. Retrofitting logging after a run is painful. You may want to experiment with the logging file formats or a service like \texttt{wandb.ai} before training full models.
+
+\paragraph{Group size.}  This assignment is completed in pairs. Grades are awarded individually: both students receive their own grade, determined during the live grading session. An insufficient grade may be re-submitted once; the maximum grade for a re-submission is 6.0.
+
+\paragraph{Submission.} Specific deliverables are listed per Task. Overall, we expect you to adhere to the following: Submit (1) a shared code repository including your commits, (2) a written report as a PDF (maximum 8 pages, including figures and references), and (3) links to model checkpoints. In addition to the hand-in components, live grading is conducted individually by a TA, who will use your report as the basis for the grade.
+
+\begin{tcolorbox}[readfirstbox]
+Read through the entire assignment before writing a single line of code or starting your training runs.
+Later tasks ask questions that are much easier to answer if you have collected the right data from the start, for example, saving loss curves and checkpoints at the right moments.
+Planning ahead will save you from re-running expensive training jobs.
+\end{tcolorbox}
+
+%% ────────────────────────────────────────────────────────────────────────────
+\section{Task 0: Model Hub warm-up.}
+%% ────────────────────────────────────────────────────────────────────────────
+\paragraph{Description} Before starting the tasks, it may be good to get a feel for what are common parameter settings and training settings for different models. For this purpose, practice navigating the Hugging Face Hub.\footnote{\url{https://huggingface.co/models}}  For each of the three model IDs in Table~\ref{tab:hub-warmup}, locate and record:
+\begin{enumerate*}[label=(\arabic*)]
+    \item the number of training tokens or steps,
+    \item the model architecture (number of layers, hidden dimension, attention heads, number of trainable parameters), and
+    \item the training data sources, if possible.
+\end{enumerate*}
+
+\begin{table}[h]
+\centering
+\caption{Model IDs for the Hub warm-up exercise}
+\label{tab:hub-warmup}
+\begin{tabular}{ll}
+\toprule
+\textbf{Model ID} & \textbf{Organization} \\
+\midrule
+\texttt{allenai/OLMo-1B}            & Allen Institute for AI \\
+\texttt{HuggingFaceTB/SmolLM2-360M} & Hugging Face \\
+\texttt{Qwen/Qwen2.5-0.5B}          & Alibaba Cloud \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Pay attention to \emph{where} you look for each piece of information: some fields appear directly on the model card, others require inspecting \texttt{config.json} under the Files tab, and some are only available in the accompanying paper. Include a short table with your findings in your report, noting the source for each field.
+
+%% ────────────────────────────────────────────────────────────────────────────
+\section{Task 1: Tokenization}
+\label{sec:task1}
+%% ────────────────────────────────────────────────────────────────────────────
+
+\subsection{What to Do}
+
+Train a BPE tokenizer using nanochat's Rust tokenizer trainer on a 500 million character sample of the CLIMBMix dataset. Run two experiments: one with a vocabulary size of \textbf{8{,}192} tokens and one with \textbf{32{,}768} tokens.
+
+\subsection{Deliverables}
+
+\begin{itemize}
+    \item A short script that reproduces your tokenizer training run.
+    \item A report section (at most 1 page) answering the following questions \emph{with evidence from your own tokenizer outputs}:
+          \begin{enumerate}
+              \item What is BPE, and how does it differ from word-level and character-level tokenization?  Draw a merge tree for a concrete example (you can look for one in the data, or make your own. Do not reuse an existing example!). Make sure to also include the counts for your merges.
+              \item How does vocabulary size affect \emph{compression ratio} (tokens per character) and \emph{sequence length} for a fixed text sample?  Show measurements from both of your tokenizers on English text.
+              \item Why does vocabulary size matter for the downstream language model?  In your answer, consider the embedding matrix size, the softmax denominator, and the challenge of learning reliable representations for rare tokens.
+              \item What artifacts or failure cases do you observe?  How does your tokenizer handle numbers, source code, or non-English text?
+          \end{enumerate}
+\end{itemize}
+
+\subsection{Marking Criteria}
+
+Correctness of the BPE explanation; quality of empirical evidence; depth of analysis on vocabulary trade-offs; perceptiveness of failure-case discussion.
+
+\noindent\textbf{(15 marks)}
+
+%% ────────────────────────────────────────────────────────────────────────────
+\section{Task 2: Pre-Training}
+\label{sec:task2}
+%% ────────────────────────────────────────────────────────────────────────────
+
+\subsection{What to Do}
+
+Pre-train a transformer using nanochat with \texttt{--depth~4} (or \texttt{--depth~2} only if your allocation does not permit a larger model) on the CLIMBMix dataset. Log training loss, validation loss, and bits-per-byte at regular checkpoints.
+
+\subsection{Deliverables}
+
+\begin{itemize}
+    \item Training and validation set bits-per-byte curves (plots, included in the report). Use bpb instead of the raw loss.
+    \item A saved model checkpoint.
+    \item A report section (approximately 2 pages) covering:
+          \begin{enumerate}
+              \item \textbf{The depth parameter.}  Explain what the \texttt{--depth} argument controls in nanochat and how the codebase derives all other hyperparameters (e.g., embedding width, number of attention heads, learning rate schedule, training horizon) automatically from it. For the chosen depth, state the number of layers, attention heads, embedding dimension, the total trainable parameter count, and the number of total tokens the model will be trained on. Why is a single-dial design useful for such a codebase?  What are its limitations compared to tuning each hyperparameter independently?
+              \item \textbf{Scaling laws.}  Using the Chinchilla framework \citep{10.5555/3600270.3602446}, compute the compute-optimal number of training tokens for your model's parameter count. How does nanochat's default training horizon compare? What does it mean to be ``under-trained'' or ``over-trained''?
+              \item \textbf{Loss analysis.}  Plot the progress of bits-per-byte (bpb) during training as your training curve and explain its shape. At what point does the curve flatten? What does the gap between training and validation tell you?
+              \item \textbf{Qualitative inspection.}  Sample five completions from your pre-trained model with no system prompt (raw next-token prediction). What is the model able to do at this stage, and why do you think that is the case?
+          \end{enumerate}
+\end{itemize}
+
+\subsection{Marking Criteria}
+
+Correctness of the depth-parameter explanation and auto-configuration description; accuracy of architecture description; correct application of scaling law calculations; quality of loss analysis; insightfulness of qualitative assessment.
+
+\noindent\textbf{(25 marks)}
+
+%% ────────────────────────────────────────────────────────────────────────────
+\section{Task 3: Mid-Training and Supervised Fine-Tuning}
+\label{sec:task3}
+%% ────────────────────────────────────────────────────────────────────────────
+
+\subsection{What to Do}
+
+Recall that nanochat only performs two training stages: pretraining and SFT. However, in the book, we discussed that additional stages in the form of mid-training can help the model perform better. In this task, you will implement a new mid-training stage by modifying \texttt{scripts/chat\_sft.py}. The goal is to separate \emph{reasoning adaptation} (mid-training) from \emph{instruction following} (SFT) and measure the effect empirically.
+
+\paragraph{Stage 1 --- Mid-training.}
+Modify the \texttt{train\_tasks} list in \texttt{chat\_sft.py} so that it contains only reasoning and knowledge tasks: MMLU and GSM-8K. Remove all other conversational and spelling data. Run \texttt{chat\_sft.py} from your pre-trained base checkpoint and save the resulting checkpoint.
+
+\paragraph{Stage 2 --- SFT.}
+Modify \texttt{chat\_sft.py} again so that \texttt{train\_tasks} contains only SmolTalk. You will also need to make a small change so the script loads your Stage~1 checkpoint rather than the base pre-trained model. Inspect the \texttt{load\_model} call in \texttt{chat\_sft.py} as a starting point.\footnote{Hint: read \texttt{nanochat/checkpoint\_manager.py} to understand how checkpoints are located.} Run \texttt{chat\_sft.py} from your Stage~1 checkpoint to proceed with SFT after mid-training.
+
+After each stage, evaluate with \texttt{scripts/chat\_eval.py} on ARC-Easy, ARC-Challenge, and GSM-8K.
+
+\textbf{Sanity check:} Before running Stage~1, inspect the data: print the first few rows of the MMLU and SmolTalk datasets to understand their format and content. Make sure you are able to answer: how many training examples does each dataset contribute, and what does a single training example look like?
+
+\subsection{Deliverables}
+
+\begin{itemize}
+    \item Two checkpoints, one for each stage (mid-training and SFT).
+    \item Evaluation scores on ARC-Easy, ARC-Challenge, and GSM-8K after each stage, reported as a table. This should be part of the report (see below).
+    \item A report section (approximately 3 pages) covering:
+          \begin{enumerate}
+              \item \textbf{Implementation.} Describe the changes you made to the codebase such that you can do training in stages. Also list the hyperparameters you are taking for the training experiments. You are free to experiment with them!
+              \item \textbf{Loss masking.} Why is the SFT loss computed only on assistant tokens?  Construct a concrete token-level example illustrating what the loss would look like with and without masking.
+              \item \textbf{Dataset analysis.} For each stage, describe the dataset used, its approximate size, and why it was chosen for that stage specifically.  What values or potential biases might be embedded in dataset training splits?  How might these shape model behaviour?
+              \item \textbf{Benchmark scores.} Report your evaluation scores after each stage in a table. What changed between Stage~1 and Stage~2, and why? Also compare to the pretrained results such that your analysis covers all three stages. Note any results that surprised you.
+              \item \textbf{Parameter-efficient fine-tuning.}  nanochat performs full fine-tuning: every parameter is updated during SFT. Describe how LoRA (Low-Rank Adaptation) and its quantised variant QLoRA differ from full fine-tuning. What are the trade-offs in compute, memory, and final model quality? Would you recommend using PEFT techniques for the depths we have used in training so far?
+          \end{enumerate}
+\end{itemize}
+
+\subsection{Marking Criteria}
+
+Correctness and clarity of the implementation description; correctness of the loss-masking explanation; critical quality of dataset analysis; accuracy and completeness of reported benchmark scores and their interpretation; conceptual accuracy of the LoRA/QLoRA comparison.
+
+\noindent\textbf{(30 marks)}
+
+%% ────────────────────────────────────────────────────────────────────────────
+\section{Task 4: Inference, Deployment, and Critical Reflection}
+\label{sec:task4}
+%% ────────────────────────────────────────────────────────────────────────────
+
+\subsection{Part A: Inference and Deployment}
+
+Launch nanochat's inference server and web UI. Interact with your trained model. Then address the following in your report (approximately 1 page):
+
+\begin{enumerate}
+    \item \textbf{The inference loop.}  Describe how autoregressive sampling works, including the role of the key--value (KV) cache in avoiding redundant computation across decoding steps. Play around with decoding with different parameters: What is temperature, and what effect does varying it (try 0.1, 0.7, and~1.5) have on output quality and diversity?  Show and discuss five representative examples from your own model.
+    \item \textbf{Production hardening.}  Identify three concrete engineering changes that the nanochat inference server would need before deployment at production scale.
+    \item \textbf{Capability comparison and scaling.}  Look up published benchmark scores on ARC-Easy, ARC-Challenge, and GSM-8K for at least two publicly available models: one in a comparable size range to your nanochat model, and one substantially larger. Feel free to find scores for any type of inference design (e.g., zero-shot, few-shot, others) but report the specific conditions. Model cards and leaderboard entries on the Hugging Face Hub are a good starting point; cite every source you use. Build a table placing your own results alongside the published figures. Then address the following: Where does your model fall relative to models of similar parameter count?  What does the gap between your model and a well-trained model of the same size reveal about the role of data quality, training duration, and alignment?
+\end{enumerate}
+
+\subsection{Part B: Critical Reflection}
+
+Write a short discussion (approximately 0,5-1 page) responding to \textbf{one} of the following three prompts. Your reflection may be discussed during the oral Q\&A, so make sure you can defend your claims.
+
+\begin{quote}
+\textbf{Prompt 1 --- Access and democratization.}
+nanochat's headline claim is that ``the best ChatGPT that \$100 can buy'' brings LLM training within reach of individuals. Critically evaluate this claim. Who still cannot access this pipeline, and why?
+\end{quote}
+
+\begin{quote}
+\textbf{Prompt 2 --- Data and values.}
+nanochat pre-trains on CLIMBMix, a clustering-based iteratively bootstrapped data mixture corpus. What decisions were made in constructing this dataset, and whose values do they embed?  How might a different pre-training corpus lead to a qualitatively different model?
+\end{quote}
+
+\begin{quote}
+\textbf{Prompt 3 --- Environmental cost.}
+nanochat's ``affordable'' training run consumes approximately four hours of 8$\times$H100 GPUs. Estimate the carbon cost of your own training run using an established methodology (e.g.\ the ML CO$_2$ Impact calculator\footnote{\url{https://mlco2.impact.compute.org}}). Situate this in the broader context of LLM environmental impact.  Is ``cheap'' the same as ``low-impact''?
+\end{quote}
+
+\subsection{Marking Criteria}
+
+Part~A: correctness of inference loop description; practicality of production hardening proposals; completeness of the benchmark description and relevance of discussion to state-of-the-art; Part~B: analytical depth; use of evidence; willingness to challenge assumptions.
+
+\noindent\textbf{(30 marks total: 20 for Part A, 10 for Part B)}
+
+%% ────────────────────────────────────────────────────────────────────────────
+\section{Evaluation}
+\label{sec:evaluation}
+%% ────────────────────────────────────────────────────────────────────────────
+
+\subsection{Mark Scheme}
+
+\begin{table}[h]
+\centering
+\caption{Mark allocation for Assignment 1}
+\label{tab:marks}
+\begin{tabular}{lcc}
+\toprule
+\textbf{Task} & \textbf{Marks} & \textbf{Cumulative} \\
+\midrule
+Task 1: Tokenization                         & 15 & 15 \\
+Task 2: Pre-training                         & 25 & 40 \\
+Task 3: Mid-training and SFT                 & 30 & 70 \\
+Task 4: Inference, deployment, reflection    & 30 & 100 \\
+\midrule
+\textbf{Maximum}                             & \textbf{100} & \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Grade Descriptors}
+A \textbf{pass} ($\geq$50\%) requires correct execution of all four tasks and written explanations that demonstrate understanding of each stage's purpose. You can demonstrate understanding by describing your observations for the experiments, discussing the impact of setting certain parameters, and linking your results to the underlying data or the material discussed in the course lectures.
+
+Note that LLM experiments are inherently non-deterministic.  Two runs with identical configuration may produce slightly different results.  This is expected, and a sign of a working system, not a bug.  Report means and variance where it matters, and be honest about what you could not get to work.
+
+\subsection{Live Grading}
+
+A part of your grade is provided during an assessment by a TA in a live session. This assessment will be performed in pairs. The TA will ask you to explain your insights of your submitted report. You should be able to explain any part of your code and written analysis, and may be asked to reflect on potential changes to the experimental setup. Both members of a pair are expected to be knowledeable about the entire project, will be graded separately and may receive different grades.
+
+%% ────────────────────────────────────────────────────────────────────────────
+\section{Recommended Reading}
+\label{sec:reading}
+%% ────────────────────────────────────────────────────────────────────────────
+
+\begin{itemize}
+    \item \citet{vaswani2017attention} --- the original transformer paper; essential reading before Task~2.
+    \item \citet{10.5555/3600270.3602446} --- Chinchilla scaling laws; required for the scaling-law question in Task~2.
+    \item \citet{ouyang2022training} --- InstructGPT; the basis for SFT and RLHF in Task~3.
+    \item \citet{diao2025nemotronclimb} --- CLIMBMix / Nemotron-CLIMB; read the data curation methodology before Task~2's dataset analysis question.
+    \item \citet{bender2021dangers} --- critical perspective on large language models; relevant to the Task~4 reflection prompts.
+    \item \citet{huggingface2022course} --- the Hugging Face LLM Course; covers the \texttt{transformers}, \texttt{tokenizers}, and \texttt{datasets} libraries and the Hugging Face Hub; useful context for Tasks~1, 3, and~4.
+    \item \citet{labonne2023llmcourse} --- Labonne's \textit{LLM Course}; practitioner roadmap covering LoRA/QLoRA, DPO, GGUF/GPTQ quantization, and vLLM/TGI serving; recommended before Tasks~3 and~4.
+\end{itemize}
+
+%% ────────────────────────────────────────────────────────────────────────────
+\section{Academic Integrity}
+\label{sec:integrity}
+%% ────────────────────────────────────────────────────────────────────────────
+
+You may use nanochat's code as-is for all pipeline stages; building on existing infrastructure is normal practice. All written analysis must be your own. Undeclared AI-generated writing constitutes a violation of academic integrity policy and will be treated accordingly. Any declared AI-assisted text will be scrutinized during the oral Q\&A.
+
+\subsection*{AI Tool Self-Disclosure}
+
+Append a completed self-disclosure to your report PDF (not counted in the 8 pages). If you do not include one, we will assume all submitted work was produced without AI assistance. Because your use of these tools may change across assignments, do not copy-paste a disclosure from a previous submission: answer each question freshly for this assignment.
+
+\begin{enumerate}
+    \item \textbf{Did you use any AI tools for this assignment?}
+    \begin{itemize}[label=$\square$, leftmargin=2em]
+        \item Yes, I used one or more AI tools to assist me with this assignment.
+        \item No, I did not use any AI tools (you may skip the remaining questions).
+    \end{itemize}
+
+    \item \textbf{For each tool you used, provide the following information:}
+    \begin{enumerate}[label=\alph*.]
+        \item \textit{Name of the tool} (e.g.\ ChatGPT, GitHub Copilot, Claude, Cursor).
+        \item \textit{Purpose.}  How did you use it?  Consider the usage modes discussed in the lectures: learning and understanding, writing, coding and debugging, studying. Elaborate briefly on how it supported your work.
+        \item \textit{Date(s) of access.}  A single date or a time span; be as specific as you can.
+        \item \textit{Critical assessment.}  How reliable and useful was the tool's output for this assignment?  Was it accurate about the nanochat pipeline, the benchmark results, or the theoretical concepts covered in this course?  How did you verify it?
+        \item \textit{Scope within this assignment.}  Which parts did you use the tool for? Examples: understanding a paper, setting up or debugging training code, interpreting loss curves or benchmark scores, debugging \LaTeX errors in a report section, spell-checking the critical reflection essay.
+    \end{enumerate}
+
+    \item \textbf{Acknowledgement.}\\
+    By submitting this disclosure, you confirm that you have critically verified all AI-generated content and accept full responsibility for the accuracy and validity of everything submitted under your name.\\[4pt]
+    $\square$\quad I confirm the above.
+
+    \item \textbf{Additional comments} (optional).\\
+    Any further observations about how AI tools helped or hindered your understanding of the LLM training pipeline in this case study.
+
+\end{enumerate}
+
+%% ────────────────────────────────────────────────────────────────────────────
+\section{Conclusion}
+\label{sec:conclusion}
+%% ────────────────────────────────────────────────────────────────────────────
+
+In this chapter we have used nanochat as a window into the complete LLM training pipeline.  You have trained a BPE tokenizer, observed a transformer learn from web text, adapted that model to follow instructions, evaluated it on standard benchmarks, and deployed it as a chat assistant.
+
+The gap between your depth-4 model and the frontier will be obvious, because we don't expect you to have access to datacenter-grade compute capabilities. However, the experiments are, in theory, scalable: rerunning at higher depths and with additional data resources will hopefully lead to more capable models, as predicted by the scaling laws. After completion of Assignment 1, you will be better equipped for future experiments where an increased scale is necessary.
+
+% \end{document}  % uncomment if compiling standalone

@@ -1,0 +1,313 @@
+% % chapter5_nanochat.tex
+% % Case Study 1: Building LLMs from Scratch (nanochat assignment)
+% %
+% % Intended to be \input{} into the main book document.
+% % To compile standalone, uncomment the preamble and \end{document} below.
+% %
+% %% ── STANDALONE PREAMBLE ─────────────────────────────────────────────────────
+% \documentclass[12pt]{book}
+% \usepackage[utf8]{inputenc}
+% \usepackage[T1]{fontenc}
+% \usepackage{amsmath,amssymb}
+% \usepackage{listings}
+% \usepackage[inline]{enumitem}
+% \usepackage{xcolor}
+% \usepackage{booktabs}
+% \usepackage{array}
+% \usepackage{hyperref}
+% \usepackage{natbib}
+% \usepackage[most]{tcolorbox}
+% \begin{document}
+% %% ────────────────────────────────────────────────────────────────────────────
+
+\lstset{
+  basicstyle=\ttfamily\footnotesize,
+  breaklines=true,
+  frame=single,
+  numbers=left,
+  numberstyle=\tiny,
+  xleftmargin=2em,
+  framexleftmargin=2em,
+}
+
+
+%\chapter{Case Study 1: Building LLMs from Scratch}\label{ch:nanochat}
+
+
+\chapter{案例研究 1：从零构建大语言模型}
+\label{ch:nanochat}
+    
+\begin{learningbox}
+在本案例研究中，你将学习如何训练你自己的模型。
+具体来说，你将能够：
+\begin{itemize}[leftmargin=*, nosep]
+    \item 解释一个 ChatGPT 式大语言模型的端到端{\em 训练流水线}，区分各阶段的目的与机制：分词、预训练、中期训练与监督微调。
+    \item 配置并训练一个字节对编码（BPE）{\em 分词器}，并阐明选择词表规模所涉及的取舍。
+    \item 从机制层面描述 Transformer {\em 架构}：注意力头、层深、嵌入维度。你将探究这些超参数如何与模型容量和算力预算相互作用。
+    \item 在标准{\em 基准测试}（ARC-Easy、ARC-Challenge、GSM-8K）上评估一个训练好的语言模型，并批判性地解读结果，包括失败模式。
+    \item 批判性地反思大语言模型训练在{\em 伦理}、环境与可及性方面的维度，包括成本作为准入门槛，以及数据整理作为一项承载价值判断的选择。
+    \item 访问并解读与开放获取大语言模型相关的信息，包括阅读模型卡、训练报告、阅读与大语言模型训练相关的代码，以及其他类型的{\em Hub 条目}。
+\end{itemize}
+\end{learningbox}
+
+
+\section{构建一个聊天机器人}
+我们将通过一个实践案例，走完一个现代 ChatGPT 式语言模型的完整生命周期。我们使用 \textit{nanochat}，\footnote{\url{https://github.com/karpathy/nanochat}} 它是 Andrej Karpathy 于 2025 年 4 月发布的一个极简、单一代码库、全栈式的指令遵循大语言模型实现。与他更早的 \textit{nanoGPT}（只涵盖预训练）不同，nanochat 实现了完整的训练流水线：一个字节对编码分词器、在网页文本上预训练并在基准数据集上做监督微调（SFT）、一个推理服务器，以及一个聊天网页界面。
+
+代码主要使用纯 Python、依赖极少，因此易于使用与扩展。该代码库约含 8{,}000 行 Python 与少量 Rust。\footnote{如果这个数字听起来很大，值得注意的是，与之对应的专有系统动辄数百万行代码。nanochat 的目标是成为一个小型自包含版本。}
+
+nanochat 的性能令人惊叹：一个具备 GPT-2 能力的大语言模型（2019 年训练它要花约 \$43,000 \citep{radford2019language}）如今只需 \$48（约 2 小时的 8×H100 GPU 节点）。虽然这样的算力对大学里的常规学生项目而言并不算常见，但我们可以把实验规模缩小，使之适合一门动手实践课程。有一点很重要：从原始字节到可用的聊天助手，每一次梯度更新与每一个设计决策都是可见的。
+我们将带你走完 nanochat 流水线的四项任务，这些任务你都要完成。
+
+由于课程上的 GPU 预算有限，你将训练一个\emph{小}模型（深度为 4，视可用资源而定，见第~\ref{sec:preparation} 节）；随后你要借助一些理论以及已公布的（nanochat）基准测试，反思在更大规模下可能发生什么。
+
+%\section{Learning Goals}
+\label{sec:learning-goals}
+
+\section{背景：Karpathy 的 nanochat}
+\label{sec:background}
+本案例研究将让你直接动手体验现代大语言模型训练流水线的每一个阶段，从输入文本到部署好的聊天助手。这一经验会把第~2--4 章的理论概念落到具体、可调试的代码上。
+
+
+
+\texttt{nanochat} 开箱即被配置为训练一个算力最优模型，只需设置一个复杂度旋钮：\texttt{--depth}，它指定 Transformer 的层数。其他所有超参数——嵌入宽度、注意力头数量、学习率调度、训练时长、权重衰减——都会以接近最优的方式自动推导出来。这使配置空间保持可控，同时完整保留了「理解每个参数作用」的教学价值。
+
+训练流水线按此前（但愿已经熟悉）的阶段推进，下面简要描述。
+
+\paragraph{预训练}  模型在约 60 亿词元上训练，这些词元取自 CLIMBMix \citep{diao2026nemotron}——一个基于聚类的、迭代自举的数据混合语料。一个深度 24（约 14 亿参数）的模型在 4$\times$H100 节点的计算集群上训练约 4 小时，可达到 2.41 的验证损失（0.717 每字节比特数）。
+%on the Dutch Snellius\footnote{\url{https://servicedesk.surf.nl/wiki/spaces/WIKI/pages/30660184/Snellius}} compute cluster.
+
+\paragraph{监督微调（SFT）}  从预训练检查点出发，模型在一组指令遵循与推理数据的混合上微调：SmolTalk \citep{benallal2024smoltalk}（46 万条通用对话）、MMLU（选择题知识问答，3 个轮次）、GSM-8K（小学数学，4 个轮次）、身份对话，以及合成的拼写任务——总计约 110 万个训练样本。请注意，交叉熵损失\emph{只}在助手词元上计算，而不在用户提示词上计算，这与 InstructGPT 的训练流程一致 \citep{ouyang2022training}。
+
+在每个训练阶段之前，会用一个 Rust 实现，在 20 亿字符上训练一个 BPE 分词器，在一分钟内产出 32{,}768 个词元的词表。
+
+开箱还附带一个网页推理服务器与一个轻量 JavaScript 聊天界面，让你可以立即与训练好的模型交互。
+
+\paragraph{补充资源}  有两门免费课程为本案例研究的内容提供了互补的视角。\textit{Hugging Face LLM Course} \citep{huggingface2022course} 介绍了 \texttt{transformers}、\texttt{datasets}、\texttt{tokenizers} 与 \texttt{accelerate} 这几个库，以及如今大多数开放权重模型据以分发与评估的 Hugging Face Hub。Mathieu Labonne 的 \textit{LLM Course} \citep{labonne2023llmcourse} 提供了一份实践者路线图，涵盖预训练数据整理、参数高效微调（LoRA、QLoRA）、偏好对齐（DPO、PPO、GRPO）、量化（GGUF、GPTQ）以及生产级推理服务（vLLM、TGI）。这些资源共同把 nanochat 置于更广阔的开源大语言模型生态之中，并在任务~3 与任务~4 中被明确引用。你也可以自由浏览其他资源。强烈建议在报告中按需链接与引用来源。
+
+\section{实验准备}
+\label{sec:preparation}
+
+\paragraph{代码仓库}  克隆课程仓库，并在写任何代码之前仔细阅读 README。
+
+\begin{lstlisting}[language=bash, caption={克隆 nanochat 仓库}]
+git clone git@github.com:karpathy/nanochat.git
+\end{lstlisting}
+
+\paragraph{算力}  不需要专用算力。你可以用自带 GPU 的笔记本，或一台更大的计算机。%, the LIACS DSLab, or the machines in the LIACS computer rooms in Goraleus. 
+实验经过设计，使每次运行最多在约 8 小时内完成。预训练请使用 \texttt{--depth~4} 配置；只有当你的硬件无法支撑更大模型时，\texttt{--depth~2} 才是可接受的。除非你有相当强的硬件，否则\emph{不要}尝试深度~$\geq$12。
+
+\paragraph{日志}  nanochat 会按可配置的间隔把训练损失、验证损失与每字节比特数记录到终端，也提供了在运行期间报告与保存信息的额外功能。因此，从一开始就启用结构化日志、写入 \texttt{.jsonl} 文件是明智之举。事后补加日志非常痛苦。你不妨试验一下日志文件格式。我们建议在训练完整模型之前，先使用 \texttt{wandb.ai} 之类的服务。
+
+%\paragraph{Group size.}  This assignment is designed to be completed in pairs. Grades are awarded individually: both students receive their own grade, determined during the live grading session. An insufficient grade may be re-submitted once; the maximum grade for a re-submission is 6.0.
+
+%\paragraph{Submission.} Specific deliverables are listed per Task. Overall, we expect you to adhere to the following: Submit (1) a shared code repository including your commits, (2) a written report as a PDF (maximum 8 pages, including figures and references), and (3) links to model checkpoints. In addition to the hand-in components, live grading is conducted individually by a TA, who will use your report as the basis for the grade.
+
+%\begin{tcolorbox}[readfirstbox]
+%Read through the entire assignment before writing a single line of code or starting your training runs.
+%Later tasks ask questions that are much easier to answer if you have collected the right data from the start, for example, saving loss curves and checkpoints at the right moments.
+%Planning ahead will save you from re-running expensive training jobs.
+%\end{tcolorbox}
+
+%% ────────────────────────────────────────────────────────────────────────────
+\section{任务 0：模型 Hub 热身}
+%% ────────────────────────────────────────────────────────────────────────────
+\paragraph{说明} 在开始各项任务之前，先熟悉一下不同模型常见的参数设置与训练设置是很有好处的。为此，请练习浏览 Hugging Face Hub。\footnote{\url{https://huggingface.co/models}}  对表~\ref{tab:hub-warmup} 中的三个模型 ID，请分别找到并记录：
+\begin{enumerate}[label=\arabic*.]
+    \item 训练词元数或步数，
+    \item 模型架构（层数、隐藏维度、注意力头数、可训练参数数量），以及
+    \item 训练数据来源（如有可能）。
+\end{enumerate}
+
+\begin{table}[h]
+\centering
+
+\begin{tabular}{ll}
+\toprule
+\textbf{模型 ID} & \textbf{机构} \\
+\midrule
+\texttt{allenai/OLMo-1B}            & Allen Institute for AI \\
+\texttt{HuggingFaceTB/SmolLM2-360M} & Hugging Face \\
+\texttt{Qwen/Qwen2.5-0.5B}          & Alibaba Cloud \\
+\bottomrule
+\end{tabular}
+\caption{Hub 热身练习所用的模型 ID}
+\label{tab:hub-warmup}
+\end{table}
+
+请注意你是在\emph{哪里}找到每一项信息的：有些字段直接出现在模型卡上，有些需要查看 Files 标签页下的 \texttt{config.json}，还有一些只能在配套论文中找到。请在报告中附上一张简短表格列出你的发现，并注明每个字段的来源。
+
+%% ────────────────────────────────────────────────────────────────────────────
+\section{任务 1：分词}
+\label{sec:task1}
+%% ────────────────────────────────────────────────────────────────────────────
+
+\subsection{要做什么}
+
+使用 nanochat 的 Rust 分词器训练器，在 CLIMBMix 数据集 5 亿字符的样本上训练一个 BPE 分词器。做两组实验：一组词表规模为 \textit{8{,}192} 个词元，另一组为 \textit{32{,}768} 个词元。
+
+\subsection{交付物}
+
+\begin{itemize}
+    \item 一个能复现你分词器训练过程的简短脚本。
+    \item 一节报告（最多 1 页），用你自己分词器输出的证据回答下列问题：
+          \begin{enumerate}
+              \item 什么是 BPE，它与词级、字符级分词有何不同？为一个具体例子画出合并树（你可以在数据中找一个，也可以自己造一个。不要复用已有的例子！）。务必同时给出你各次合并的计数。
+              \item 对固定的文本样本，词表规模如何影响\emph{压缩比}（每字符词元数）与\emph{序列长度}？请给出你两个分词器在英文文本上的测量结果。
+              \item 词表规模为何对下游语言模型重要？回答时请考虑嵌入矩阵的大小、softmax 的分母，以及为罕见词元学到可靠表示的困难。
+              \item 你观察到哪些瑕疵或失败情形？你的分词器如何处理数字、源代码或非英文文本？
+          \end{enumerate}
+\end{itemize}
+%
+%\subsection{Marking Criteria}
+请注意：BPE 解释的正确性；实证证据的质量；对词表取舍分析的深度；失败情形讨论的洞察力。
+
+%\noindent\textbf{(15 marks)}
+
+
+
+%% ────────────────────────────────────────────────────────────────────────────
+\section{任务 2：预训练}
+\label{sec:task2}
+%% ────────────────────────────────────────────────────────────────────────────
+
+\subsection{要做什么}
+
+用 nanochat 以 \texttt{--depth~4}（或者，如果你的计算机不够快，用 \texttt{--depth~2}）在 CLIMBMix 数据集上预训练一个 Transformer。按固定检查点记录训练损失、验证损失与每字节比特数。
+
+\subsection{交付物}
+
+\begin{itemize}
+    \item 训练集与验证集的每字节比特数曲线（图，需纳入报告）。请使用 bpb 而不是原始损失。
+    \item 一个保存好的模型检查点。
+    \item 一节报告（约 2 页），涵盖：
+          \begin{enumerate}
+              \item 深度参数：解释 nanochat 中 \texttt{--depth} 参数控制什么，以及代码库如何由它自动推导出其他所有超参数：嵌入宽度、注意力头数量、学习率调度、训练时长。对你所选深度，给出层数、注意力头数、嵌入维度、可训练参数总数，以及模型将要训练的**总词元数**。为什么对这种代码库而言，单旋钮设计很有用？与逐个独立调节超参数相比，它的局限是什么？
+              \item 缩放定律：用 Chinchilla 框架 \citep{10.5555/3600270.3602446}，计算与你模型参数量相匹配的算力最优训练词元数。nanochat 的默认训练时长与之相比如何？{\em 训练不足}或{\em 过度训练}意味着什么？
+              \item 损失分析：把训练过程中每字节比特数（bpb）的变化作为训练曲线画出来，并解释其形状。曲线在何处趋于平坦？训练与验证之间的差距告诉了你什么？
+              \item 定性观察：在无系统提示词（原始下一个词元预测）的条件下，从你的预训练模型采样五个续写。在这个阶段模型能做什么？你认为原因是什么？
+          \end{enumerate}
+\end{itemize}
+%
+%\subsection{Marking Criteria}
+%
+请注意：深度参数解释与自动配置描述的正确性；架构描述的准确性；缩放定律计算的正确应用；损失分析的质量；定性评估的洞察力。
+
+%\noindent\textbf{(25 marks)}
+
+
+%% ────────────────────────────────────────────────────────────────────────────
+\section{任务 3：中期训练与监督微调}
+\label{sec:task3}
+%% ────────────────────────────────────────────────────────────────────────────
+
+\subsection{要做什么}
+
+回想一下，nanochat 只做两个训练阶段：预训练与 SFT。然而在本书中我们讨论过，以中期训练形式加入的额外阶段可以帮助模型表现更好。在本任务中，你将通过修改 \texttt{scripts/chat\_sft.py} 来实现一个新的中期训练阶段。目标是把\emph{推理适配}（中期训练）与\emph{指令遵循}（SFT）分开，并实证地测量其效果。
+
+\paragraph{阶段 1 —— 中期训练}
+修改 \texttt{chat\_sft.py} 中的 \texttt{train\_tasks} 列表，使其只包含推理与知识类任务：MMLU 与 GSM-8K。移除其他所有对话与拼写数据。从你的预训练基础检查点出发运行 \texttt{chat\_sft.py}，并保存产出的检查点。
+
+\paragraph{阶段 2 —— SFT}
+再次修改 \texttt{chat\_sft.py}，使 \texttt{train\_tasks} 只包含 SmolTalk。你还需要做一处小改动，让脚本加载你的阶段 1 检查点，而不是基础预训练模型。可以从检查 \texttt{chat\_sft.py} 中的 \texttt{load\_model} 调用入手。\footnote{提示：阅读 \texttt{nanochat/checkpoint\_manager.py} 以理解检查点是如何被定位的。}从你的阶段 1 检查点出发运行 \texttt{chat\_sft.py}，在中期训练之后继续进行 SFT。
+
+每个阶段之后，都用 \texttt{scripts/chat\_eval.py} 在 ARC-Easy、ARC-Challenge 与 GSM-8K 上评估。
+
+\textbf{合理性检查：} 在运行阶段 1 之前，先检查数据：打印 MMLU 与 SmolTalk 数据集的前几行，了解它们的格式与内容。请确保你能回答：每个数据集贡献多少个训练样本，单个训练样本长什么样？
+
+\subsection{交付物}
+
+\begin{itemize}
+    \item 两个检查点，每个阶段各一个（中期训练与 SFT）。
+    \item 每个阶段之后在 ARC-Easy、ARC-Challenge 与 GSM-8K 上的评估分数，以表格形式报告。这应作为报告的一部分（见下）。
+    \item 一节报告（约 3 页），涵盖：
+          \begin{enumerate}
+              \item 实现：描述你对代码库所做的改动，使你能够分阶段训练。列出你用于训练实验的超参数。你可以自由地试验它们！
+              \item 损失掩码：为什么 SFT 损失只在助手词元上计算？构造一个具体的词元级例子，说明有掩码与无掩码时损失分别是什么样。
+              \item 数据集分析：对每个阶段，描述所用数据集、其大致规模，以及为什么专门为该阶段选择它。数据集训练划分中可能嵌入哪些价值观或潜在偏见？它们可能如何塑造模型行为？
+              \item 基准分数：用表格报告每个阶段之后的评估分数。阶段 1 与阶段 2 之间发生了什么变化，为什么？还要与预训练结果对比，使你的分析覆盖全部三个阶段。指出任何令你意外的结果。
+              \item 参数高效微调：nanochat 执行的是全量微调：SFT 期间每个参数都会被更新。描述 LoRA（低秩适配）及其量化变体 QLoRA 与全量微调有何不同。在算力、内存与最终模型质量上有哪些取舍？对我们迄今训练所用的深度，你会推荐使用 PEFT 技术吗？
+          \end{enumerate}
+\end{itemize}
+%\subsection{Marking Criteria}
+请注意：实现描述的正确性与清晰度；损失掩码解释的正确性；数据集分析的批判性质量；所报告基准分数及其解读的准确性与完整性；LoRA/QLoRA 对比的概念准确性。
+
+%\noindent\textbf{(30 marks)}
+
+%% ────────────────────────────────────────────────────────────────────────────
+\section{任务 4：推理、部署与批判性反思}
+\label{sec:task4}
+%% ────────────────────────────────────────────────────────────────────────────
+
+\subsection{第 A 部分：推理与部署}
+
+启动 nanochat 的推理服务器与网页界面。与训练好的模型交互。然后在报告中回应以下内容（约 1 页）：
+
+\begin{enumerate}
+    \item 推理循环：描述自回归采样如何工作，包括键值（KV）缓存在避免跨解码步重复计算中的作用。用不同参数试玩解码：什么是温度，改变它（试 0.1、0.7 与~1.5）对输出质量与多样性有何影响？展示并讨论来自你自己模型的五个代表性例子。
+    \item 生产环境加固：指出 nanochat 推理服务器在规模化生产部署之前需要做出的三项具体工程改动。
+    \item 能力对比与缩放：查找至少两个公开可用模型在 ARC-Easy、ARC-Challenge 与 GSM-8K 上已公布的基准分数：一个与你 nanochat 模型规模相当，另一个显著更大。你可以自由查找任何推理设计（如零样本、少样本等）下的分数，但要报告具体条件。Hugging Face Hub 上的模型卡与排行榜条目是很好的起点；引用你使用的每一个来源。做一张表，把你自己的结果与已公布数字并列。然后回答以下两个问题。你的模型相对于参数数量相近的模型处于什么位置？你的模型与同等规模但训练良好的模型之间的差距，揭示了数据质量、训练时长与对齐各自的作用是什么？
+\end{enumerate}
+
+\subsection{第 B 部分：批判性反思}
+
+针对以下三个提示中的{\em 一个}，写一段简短讨论（约 0.5-1 页）。%Your reflection may be discussed during the oral Q\&A, so make sure you can defend your claims.
+
+\begin{quote}
+{\em 提示 1 —— 可及性与民主化}
+nanochat 的宣传口号是「\$100 能买到的最好的 ChatGPT」，它让大语言模型训练进入个人的能力范围。请批判性地评估这一说法。还有谁无法使用这条流水线，为什么？
+\end{quote}
+
+\begin{quote}
+{\em 提示 2 —— 数据与价值观}
+nanochat 在 CLIMBMix 上预训练，这是一个基于聚类的、迭代自举的数据混合语料。构建该数据集时做出了哪些决策，它们嵌入了谁的价值观？换一个预训练语料，会如何导致一个质上不同的模型？
+\end{quote}
+
+\begin{quote}
+{\em 提示 3 —— 环境成本}
+nanochat 的「可负担」训练运行消耗约 4 小时的 8$\times$H100 GPU。请用一种公认的方法（例如 ML CO$_2$ Impact 计算器）估算你自己那次训练运行的碳成本。\footnote{\url{https://mlco2.impact.compute.org}} 把它放到大语言模型环境影响这一更广阔的语境中。{\em 便宜}是否等同于{\em 低影响}？
+\end{quote}
+
+%\subsection{Marking Criteria}
+
+第 A 部分请注意：推理循环描述的正确性；生产加固建议的实用性；基准描述的完整性以及讨论与最先进水平的相关性；
+
+第 B 部分请注意：分析深度；证据的使用；挑战假设的意愿。
+
+%\noindent\textbf{(30 marks total: 20 for Part A, 10 for Part B)}
+
+
+%% ────────────────────────────────────────────────────────────────────────────
+\section{推荐阅读}
+\label{sec:reading}
+%% ────────────────────────────────────────────────────────────────────────────
+
+\begin{itemize}
+    \item \citet{vaswani2017attention} —— 原始的 Transformer 论文；任务~2 之前的必读材料。
+    \item \citet{10.5555/3600270.3602446} —— Chinchilla 缩放定律；任务~2 中缩放定律问题所需。
+    \item \citet{ouyang2022training} —— InstructGPT；任务~3 中 SFT 与 RLHF 的基础。
+    \item \citet{diao2026nemotron} —— CLIMBMix / Nemotron-CLIMB；在回答任务~2 的数据集分析问题之前，先阅读其数据整理方法。
+    \item \citet{bender2021dangers} —— 对大语言模型的批判性视角；与任务~4 的反思提示相关。
+    \item \citet{huggingface2022course} —— Hugging Face LLM 课程；涵盖 \texttt{transformers}、\texttt{tokenizers} 与 \texttt{datasets} 库以及 Hugging Face Hub；对任务~1、3、4 是有用的背景。
+    \item \citet{labonne2023llmcourse} —— Labonne 的 \textit{LLM Course}；实践者路线图，涵盖 LoRA/QLoRA、DPO、GGUF/GPTQ 量化以及 vLLM/TGI 服务；建议在任务~3 与任务~4 之前阅读。
+\end{itemize}
+
+%% ────────────────────────────────────────────────────────────────────────────
+%\section{Academic Integrity}
+%\label{sec:integrity}
+%% ────────────────────────────────────────────────────────────────────────────
+
+
+%% ────────────────────────────────────────────────────────────────────────────
+\section{结语}
+\label{sec:conclusion}
+%% ────────────────────────────────────────────────────────────────────────────
+
+在本章中，我们用 nanochat 作为一扇窗口，窥见完整的大语言模型训练流水线。你训练了一个 BPE 分词器，观察了一个 Transformer 从网页文本中学习，把该模型适配为遵循指令，在标准基准测试上评估了它，并把它部署为一个聊天助手。
+
+你的深度 4 模型与前沿之间的差距会很明显，因为我们并不指望你能用上数据中心级的算力。不过，这些实验在理论上是可扩展的：在更高深度、配以更多数据资源重跑，应当会带来更强的模型，正如缩放定律所预测的那样。完成作业 1 之后，你实际上已经独立训练了一个完整的大语言模型，在未来需要更大规模的实验中，你会更有准备。
+
+% \end{document}  % uncomment if compiling standalone
+
+\bibliographystyle{plainnat}
+\bibliography{agenticbook,refs,case,synthetic}
